@@ -1,5 +1,9 @@
 # arXiv 提交清单
 
+> **状态：暂缓。** cs.LG 需要 endorsement，走完要几天，而 ICASSP 9/23 截稿。
+> 论文改为只指向本仓库，不依赖 arXiv。若日后拿到背书，本清单和
+> `arxiv_submission.tar.gz` 仍然可用，直接照着走即可。
+
 上传文件：`arxiv_submission.tar.gz`（340 KB，36 个文件，解包后净室编译 38 页通过）
 
 ---
