@@ -1,0 +1,104 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{RLVR and its control groups.}
+GRPO~\cite{grpo2024} and its descendants~\cite{deepseekr1} optimize against
+an executable checker rather than a learned reward model, which removes reward
+hacking of the preference-model kind and makes the training signal cheap on
+program-annotated tasks. Empirical reports pair RLVR against the base policy
+and a matched SFT run; stronger evaluations add rejection-sampling SFT or
+iterated self-training~\cite{star2022,rft2023,restem2023}, which use the same
+verifier at training time without policy-gradient updates. Every arm in these
+control groups is a learning arm whose accuracy grows with the demonstration
+budget. Our contribution is not a new algorithm but the observation that adding
+one non-learning arm changes the sign of the reported effect.
+
+Recent critical work on R1-Zero-style training has begun to audit the recipe
+itself rather than its reported margins. Dr.\ GRPO~\cite{drgrpo2025} identifies
+an optimization bias in GRPO's length normalization, and
+SimpleRL-Zoo~\cite{simplerlzoo2025} shows how sharply the outcome of zero-RL
+training depends on the base model across ten backbones. Both findings concern
+what happens \emph{inside} the RL arm. Our question is orthogonal and
+complementary: holding the RL arm fixed, what does the control group have to
+contain before its reported margin means anything? A paper can adopt Dr.\ GRPO's
+unbiased estimator and still report a gain that a non-learning arm erases.
+
+\paragraph{Does RL exceed the base model's reach?}
+A parallel line asks whether RLVR expands a model's capability or merely
+sharpens its sampling distribution, e.g.\ by comparing pass@$k$ before and
+after RL~\cite{yue2025limit} or by auditing where reported gains come
+from~\cite{sober2025}. That question is about the policy; ours is about the
+comparison. The two can agree in direction while differing in what would refute
+them: our claim would be refuted by a strong solver that still loses to GRPO,
+not by a demonstration that RL narrows the output distribution.
+
+\paragraph{Weak baselines as a source of illusory progress.}
+The stance we adopt has an explicit lineage, which the conference version of
+this paper invoked without citing. In recommendation, Ferrari Dacrema et
+al.~\cite{dacrema2019} reproduced only 7 of 18 recent neural methods and found
+6 of those 7 beaten by properly tuned classical baselines. In deep metric
+learning, Musgrave et al.~\cite{musgrave2020} found a decade of reported gains
+largely attributable to experimental protocol. In neural
+retrieval,~\cite{lin2018hype} made the same argument about comparisons against
+untuned BM25. Deep RL has its own version of the problem: Henderson et
+al.~\cite{henderson2018matters} showed that reported margins can be smaller
+than the variation induced by random seeds, and Agarwal et
+al.~\cite{agarwal2021precipice} showed that point estimates over few runs
+routinely misrepresent aggregate performance.
+
+We add two elements specific to RLVR. First, the baseline we restore is
+\emph{non-learning}, so---unlike a tuned BM25 or a tuned matrix
+factorization---it cannot be strengthened by spending more of the demonstration
+budget, which is what makes it bind precisely in the scarce regime where RLVR
+is argued to be valuable. Second, the decision rule is fixed by
+pre-registration before the second task is run, so the comparison cannot be
+retrofitted to the result.
+
+\paragraph{Test-set reuse and selection.}
+Our design reserves a frozen test set and evaluates each arm on it exactly
+once, which is the operational form of a long-standing concern about adaptive
+analysis. Dwork et al.~\cite{dwork2015holdout} give the theory of how repeated
+querying of a holdout destroys its validity; Recht et
+al.~\cite{recht2019} give the empirical counterpart on ImageNet. Our
+Section~\ref{sec:results} reports three instances of the same phenomenon inside
+a single study, and Section~\ref{sec:statistics} audits our own decision
+quantity for the selection bias it could itself introduce. For multiple
+comparisons we use Holm's sequentially rejective procedure~\cite{holm1979},
+and for the interpretation of non-significant per-group results we follow
+Card et al.~\cite{card2020power} on the power that small NLP test sets actually
+afford.
+
+\paragraph{Symbolic and program-based numerical reasoning.}
+Program-of-Thought~\cite{pot2022} and PAL~\cite{pal2023} delegate arithmetic
+to an interpreter, which is what makes verifiable rewards natural on these
+tasks. The same property makes a purely deterministic solver feasible:
+FinQA~\cite{finqa2021}, ConvFinQA~\cite{convfinqa2022} and
+TAT-QA~\cite{tatqa2021} annotate answers with short executable programs over
+semi-structured tables, and BizBench~\cite{bizbench2024} packages
+CodeFinQA and CodeTAT-QA in that form.
+
+The observation that policy gradients can be trained against an executable
+checker on exactly this kind of table-program task is not new, and predates
+RLVR by most of a decade. Neural Symbolic Machines~\cite{nsm2017} trained a
+sequence-to-program model against a Lisp interpreter with REINFORCE under weak
+supervision; MAPO~\cite{mapo2018} added a memory buffer of verified
+trajectories to reduce gradient variance, on WikiTableQuestions~\cite{wtq2015}
+and WikiSQL. The control-group problem we describe is visible in that
+literature too, where deterministic semantic parsers remained competitive
+baselines. Later, Binder~\cite{binder2023} reached state of the art on the same
+table-QA benchmarks with no training at all, by binding a language model into a
+symbolic program---the strongest existing evidence that on table-program tasks
+the non-learning route is a serious competitor rather than a straw arm. Our
+solver is a port of classical label-alignment and operator-template machinery,
+not a novel method, which is exactly why its omission from RLVR control groups
+is hard to justify.
+
+\paragraph{Pre-registration and frozen evaluation.}
+Pre-registration, held-out test sets touched once, and explicit deviation logs
+are standard in fields where negative results must be credible. They are rare
+in ML practice but disproportionately valuable for a paper whose main result is
+a null: without a decision rule fixed in advance, a reader cannot distinguish
+``the effect was absent'' from ``the analysis was run until the effect was
+absent.'' Appendix~\ref{app:reproduce} states what was frozen when, which
+comparisons are confirmatory and which are exploratory, and where the full
+protocol and its logged deviations can be read.

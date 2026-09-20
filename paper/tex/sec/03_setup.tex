@@ -1,0 +1,65 @@
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Tasks and models.}
+We use three configurations built on BizBench~\cite{bizbench2024}, chosen so
+that the dataset family, the model family, the backbone scale, and the strength
+of the deterministic baseline all vary:
+
+\begin{itemize}\itemsep2pt
+\item \textbf{Config~1}: CodeTAT-QA $\times$ Qwen2.5-0.5B-Instruct. Context is a
+JSON table; gold programs index cells as \texttt{df["col"]["row"]}. 2846 clean
+training items, 400 held out as dev (all selection uses a fixed 200-item subset
+of it), frozen test $n{=}282$.
+\item \textbf{Config~2}: CodeFinQA $\times$ Llama-3.2-1B-Instruct. Context is
+narrative financial-report text with embedded tables; gold programs inline the
+numbers. 4035 clean training items, 400 dev (same 200-item convention), frozen
+test $n{=}664$.
+\item \textbf{Config~3}: CodeTAT-QA $\times$ Qwen2.5-7B-Instruct. Identical
+task, data splits, budgets, and protocol to Config~1 with a $14\times$ larger
+backbone; this is the scale probe of Section~\ref{sec:scale}.
+\end{itemize}
+
+An item is \emph{clean} if its gold program executes to its gold answer under
+our verifier: $2846/2856 = 99.65\%$ for CodeTAT-QA and $4035/4668 = 86.4\%$ for
+CodeFinQA. The ten CodeTAT-QA failures were inspected individually and are
+dataset defects (a final line not assigned to \texttt{answer}, or a
+comprehension with no bare binary operation), not adaptation artifacts.
+
+\paragraph{Demonstration budgets.}
+Nested subsets are drawn from the clean pool, so a smaller budget is always a
+prefix of a larger one. Config~1 uses
+$m \in \{0,1,2,4,8,16,64,256,1024,2446\}$ and Config~2 uses
+$m \in \{0,16,64,128,256,1024,3635\}$, where the largest value is the full
+pool. Three independent subset seeds are drawn per configuration; every arm at
+a given $(m, \text{seed})$ sees exactly the same $m$ demonstrations.
+
+\paragraph{Pre-registration.}
+The decision quantity in Eq.~\eqref{eq:delta}, the gate criteria, the budget
+selection rule, and the verdict vocabulary were frozen before any training or
+evaluation run on the second task. The protocol also fixed, in advance, how a
+result contrary to our expectation would be handled: \emph{if the solver is
+strong and GRPO nevertheless wins, report it as such, and do not weaken the
+solver to recover the original narrative}. Both outcomes were accepted at
+freeze time. The solver's construction was likewise constrained ex ante to a
+``good-faith maximum effort'' clause forbidding template pruning or threshold
+tuning in response to intermediate results.
+
+\paragraph{Budget selection.}
+Two operating points are chosen per configuration from the warm-start dose
+curve using the pre-registered bands: $m_L$ is the smallest budget landing in
+$[5\%, 20\%]$ dev accuracy and $m_H$ the smallest in $[25\%, 45\%]$. This
+yields $m_L{=}2, m_H{=}64$ for Config~1 and $m_L{=}128, m_H{=}256$ for
+Config~2. When the initial grid left the low band empty, additional budgets
+were run rather than reinterpreting the band---this is one of the logged
+deviations.
+
+\paragraph{Leakage control.}
+We assert disjointness of dev, demonstration pool, and test, and verify before
+each solver run that its retrieval library does not intersect dev. The frozen
+test set is untouched during training, checkpoint selection, and budget
+selection; every arm is evaluated on it exactly once, at the checkpoint already
+selected on dev.
+
+\paragraph{Deviations.}
+Minor protocol adjustments (e.g., adding intermediate budget points when initial grids left required bands empty) were logged alongside their influence direction.

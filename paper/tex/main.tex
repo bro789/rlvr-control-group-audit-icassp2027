@@ -1,0 +1,107 @@
+% pdflatex main && bibtex main && pdflatex main && pdflatex main
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{array}
+\usepackage{url}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\captionsetup{font=small,labelfont=bf}
+\frenchspacing
+\setlength{\parskip}{1pt}
+
+% ===== 提交前只需改这一行 =====
+\newcommand{\repourl}{https://github.com/YOUR-ACCOUNT/rlvr-control-group-audit}
+
+\title{Something Simpler Wins, But Not Always the Same One:\\
+Auditing RLVR Control Groups Across Three Backbone Scales\\[6pt]
+\large Extended version: complete per-group statistics, aggregator sensitivity\\
+and a selection-bias audit of the decision rule}
+
+\author{Keyi Li \and Yihao He \and Quanyi Li \and Guanghui Liu \and Xiaoyu Lu \and
+Linying Jiang\thanks{Corresponding author: \texttt{jiangly@swc.neu.edu.cn}}\\[4pt]
+\normalsize Software College, Northeastern University, Shenyang, China}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Reinforcement learning with verifiable rewards (RLVR) is evaluated against a
+remarkably uniform control group: the base model, matched supervised
+fine-tuning, sometimes rejection-sampling SFT. All of these are learning arms
+whose accuracy grows with the demonstration budget. We pre-registered, before
+the second task was run, a decision rule comparing GRPO against the
+\emph{maximum} over a four-arm control group, one arm of which is a
+deterministic symbolic solver that does not learn. Across two program-annotated
+financial QA tasks and three backbones spanning $14\times$ in scale, all 17
+frozen-test effect sizes are negative, from $-1.06$ to $-16.42$ points. The
+mechanism is a moving baseline: the solver attains the maximum at 0.5B and 1B
+because it is flat in the demonstration budget, while at 7B it falls 15 points
+behind and continued SFT takes its place. Ablations, a verifier-hacking audit
+over 57{,}517 positive-reward samples and a KL sweep all leave the sign
+unchanged.
+
+\medskip
+\noindent
+\textbf{One boundary, found by us and reported here.} Config~3 was included to
+answer ``your models are too small.'' It cannot. Re-running its
+smallest-margin cell at ten times the prompt coverage reverses it decisively:
+GRPO reaches $87.23\%$ and $86.88\%$ against continued SFT's $80.50\%$
+($\Delta = +6.74$, $+6.38$; McNemar $p = 0.0013$, $0.0029$), which clears this
+paper's own Go threshold. At the \emph{registered} budget nothing changes, and a
+run that fixes the degeneracy we diagnose lands at $+1.06$ with an interval of
+$[-2.13, +4.26]$ --- statistically the same place as the original $-1.06$. So
+the 7B result marks a \emph{budget} boundary, not a capability one, and the
+quantitative core of this paper is the 11 groups at 0.5B and 1B. Details in
+Appendix~\ref{app:followup}.
+
+\medskip
+\noindent
+The rest of this extended version adds the material a four-page paper cannot
+carry, and it is deliberately two-sided. In our favour: the $\max$ in the
+decision rule is
+\emph{not} responsible for the negative sign---a cross-fitted estimator that
+selects the control arm on one half of the test set and scores it on the other
+still yields a negative $\Delta$ in 17 of 17 groups (mean $-4.18$ against a
+naive $-4.44$), and the bootstrap selection bias never exceeds $0.47$ points;
+the inference-time sampling arm that is usually proposed as the missing
+baseline is not deployable on these tasks, and even its oracle upper bound
+(pass@16) loses to the solver at three of four operating points. Against us:
+under Holm correction across all 17 groups only \textbf{2} are significant, the
+per-group bootstrap intervals exclude zero in only 5, and \textbf{no GRPO run
+completed even one epoch} over its prompt pool ($0.10$--$0.79$ epochs; at 7B
+roughly $10\%$). We report all of it, with every number regenerated from the
+stored per-item outcome vectors by a single script.
+\end{abstract}
+
+\tableofcontents
+\bigskip
+
+\input{sec/01_intro}
+\input{sec/02_related}
+\input{sec/03_setup}
+\input{sec/04_method}
+\input{sec/05_results}
+\input{sec/06_scale}
+\input{sec/07_analysis}
+\input{sec/08_statistics}
+\input{sec/09_discussion}
+
+\bibliographystyle{IEEEbib}
+\bibliography{refs}
+
+\appendix
+\input{app/A_allarms}
+\input{app/B_solver}
+\input{app/C_pot}
+\input{app/D_hacking}
+\input{app/E_stability}
+\input{app/F_reproduce}
+\input{app/G_followup}
+
+\end{document}

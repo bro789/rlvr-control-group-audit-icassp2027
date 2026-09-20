@@ -1,0 +1,215 @@
+\section{The Decision Quantity, Audited}
+\label{sec:statistics}
+
+Everything in this section is computed from the stored per-item outcome vectors
+of the same runs reported above, by a single script
+(\texttt{analysis/gen\_extended\_stats.py}); no value is transcribed by hand.
+The section exists because a decision rule built on a $\max$ invites two
+objections that the conference version had no room to answer, and because a
+study reporting a null owes the reader its per-group statistics rather than the
+two cells that happen to be significant.
+
+\subsection{The pre-registered question: does GRPO clear $+3$?}
+\label{subsec:gotest}
+
+The decision rule this study registered is a Go threshold, not a test of
+inferiority: GRPO passes if $\Delta \geq +3$ points. That is the hypothesis the
+analysis owes the reader an answer to, and it is a weaker and more answerable
+one than ``is GRPO significantly worse.'' Conflating the two understates the
+result, so we report both, starting with the registered one.
+
+A paired item bootstrap ($B = 50{,}000$, $\max$ recomputed on each resample)
+gives, per group, the probability that $\Delta$ reaches the Go threshold:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+question & criterion & groups \\
+\midrule
+Does GRPO clear the registered $+3$ threshold? & 95\% CI upper bound $< +3$ & 14/17 \\
+Is GRPO strictly worse than $\max\mathcal{B}$?  & 95\% CI upper bound $< 0$  & 5/17 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$P(\Delta \geq +3)$ has a median of $0.0013$ across the 17 groups and does not
+exceed $0.0804$ in any of them. The three groups whose intervals fail to
+exclude $+3$ are all in Config~1---$m{=}2$ seeds 0 and 1, and $m{=}64$ seed
+2---where $n{=}282$ and GRPO and the solver disagree on 70 to 82 items, giving a
+wide paired interval. Config~3 has the same $n$ but excludes $+3$ in all six
+groups, because GRPO and continued SFT agree on all but 21 to 35 items and the
+paired interval is correspondingly narrow. Counts at the $+3$ boundary move by
+one group between bootstrap runs; the continuous $P(\Delta \geq +3)$ does not,
+and should be preferred.
+
+So the registered claim---GRPO does not reach the threshold that would have
+made this a positive result---is supported in 14 of 17 groups, and the
+remaining three are inconclusive rather than contrary. The stricter claim that
+GRPO is \emph{worse} is supported in 5. We make the first claim, not the
+second.
+
+\subsection{Per-group significance, and what it does not show}
+
+\input{tab/tab_pergroup}
+
+Table~\ref{tab:pergroup} reports, for all 17 groups, the McNemar discordant
+counts, the exact two-sided $p$, the same $p$ under Holm correction across the
+full family of 17, and a paired item bootstrap interval for $\Delta$. These
+test the stricter hypothesis, and the reader should keep
+Section~\ref{subsec:gotest} in view while reading them.
+
+The honest summary is unflattering. Under Holm correction \textbf{only two
+groups are significant}, both of them Config~2 at $m{=}128$
+($p_{\text{Holm}} = 8.2{\times}10^{-11}$ and $4.4{\times}10^{-12}$). The
+bootstrap interval excludes zero in five groups. Removing the two Config~2
+$m{=}128$ groups---the cell where one seed also collapsed---the remaining 15
+groups average $-2.91$ points and not one of them is individually significant.
+A reader who requires per-group significance should read this paper as
+establishing a negative result on one cell and a consistent sign everywhere
+else.
+
+That one cell deserves an additional warning against itself. Config~2 at
+$m{=}128$ is not merely the cell with the largest effect; it is the cell in
+which the RL arm was least healthy. Its two surviving runs have
+positive-reward rates of $0.081$ and $0.092$, the lowest of any run in the
+study, its third seed collapsed to zero entirely, and its prompt-pool coverage
+is $0.19$--$0.22$ epochs. The only two groups that survive multiple-comparison
+correction are therefore the two in which under-training is the most plausible
+competing explanation. We do not think this invalidates them---continued SFT
+and RS-SFT beat GRPO there without the solver's help
+(Table~\ref{tab:aggfull}), so the verdict does not rest on the solver---but a
+reader should not treat those two $p$-values as the study's strongest evidence.
+The strongest evidence is the Go-threshold result of
+Section~\ref{subsec:gotest} and the sign pattern below.
+
+The last two columns explain why. Given each group's discordant count, the
+smallest $|\Delta|$ that its McNemar test could have declared significant is a
+median of $4.82$ points uncorrected and $6.93$ points under Holm. The median
+$|\Delta|$ we actually measure is $2.84$ points, and the pre-registered Go
+threshold is $+3$. \emph{No single group in this study can resolve a three-point
+effect in either direction.}
+
+We want to be exact about what that does and does not concede. It is not a gap
+the analysis discovered after the fact: the protocol fixed $+3$ precisely
+\emph{because} it put single-seed standard error at $3$--$5$ points
+(Section~\ref{sec:method}), so the threshold was knowingly set at the floor of
+the design's resolution, and the Go rule was built to compensate---two of three
+seeds positive, an \textsc{inconclusive} band over $2$--$5$ points, further
+seeds rather than a verdict when signs disagree. The numbers above confirm that
+estimate rather than contradicting it: a median MDE of $4.82$ is what an SE of
+$3$--$5$ predicts.
+
+What it does concede is symmetric and real. Had GRPO enjoyed a genuine
+$+3$-point advantage, this design could not have certified it group by group
+either; it would have returned \textsc{inconclusive} and demanded more seeds.
+Per-group significance was therefore never the evidence, by construction. The
+sign pattern is.
+
+\subsection{What the sign pattern is worth}
+
+All 17 groups are negative. Treating them as independent observations gives a
+sign-test $p = 1.5{\times}10^{-5}$, but they are not independent: three seeds
+within a cell share a test set, a solver and a task, and the six Config~1 and
+Config~3 cells share the test set entirely. We therefore report the same test at
+three levels of clustering:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+unit of independence & units & sign-test $p$ \\
+\midrule
+group (3 seeds $\times$ 2 budgets $\times$ 3 configs, most optimistic) & 17 & $1.5{\times}10^{-5}$ \\
+(config, budget) cell & 6 & $0.031$ \\
+configuration & 3 & $0.250$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The defensible reading is the middle row: six independent operating points,
+all negative, $p = 0.031$. The headline ``17 negative effect sizes'' is a
+description of the data, not seventeen pieces of evidence, and we do not claim
+it as such.
+
+\subsection{Is the $\max$ itself producing the sign?}
+
+The sharpest objection to this design is that it commits the error the paper
+was written to criticize. $\Delta$ subtracts a $\max$ over four arms, that
+$\max$ is taken on the frozen test set, and a maximum over noisy estimates is
+upward-biased---so $\Delta$ is biased downward under the null, by an amount
+that grows with the number of arms and their noise. At 7B, where the three
+learning arms sit within a few points of each other and the whole effect is
+$1.06$--$4.26$ points, an analytic max-of-$k$ argument can be made to cover
+most of the effect.
+
+That argument assumes the arms are noisy \emph{independently}. They are not:
+every arm branches from the same warm start, sees the same items, and fails on
+largely the same items, so the per-item correlation between arms is high and
+the variance of their maximum is far below the independent case. The question
+is empirical, and the per-item vectors settle it.
+
+\input{tab/tab_crossfit}
+
+Table~\ref{tab:crossfit} reports two measurements. The first resamples items
+with replacement and computes $\Delta$ twice on each resample---once
+recomputing the $\arg\max$, once with the arm frozen at the full-sample
+$\arg\max$. The difference is exactly the bias that selecting and scoring on
+the same data introduces. It never exceeds $0.472$ points in any group and
+averages $-0.091$ points.
+
+The second is a cross-fitted estimator that removes the bias by construction:
+the control arm is selected on a random half of the test set and scored on the
+other half, averaged over $K = 2{,}000$ splits. Cross-fitted $\Delta$ is
+negative in \textbf{17 of 17 groups}, with a mean of $-4.18$ points against the
+naive $-4.44$. Selection accounts for a quarter of a point of the four-point
+effect.
+
+The reason is visible in Table~\ref{tab:pergroup}: in the 11 groups at 0.5B and
+1B the $\arg\max$ is a \emph{deterministic} arm with zero sampling variance
+that leads the nearest learning arm by at least $8.5$ points, so no selection
+takes place at all. The winner's-curse concern is real only in the six 7B
+groups, where three close learning arms compete---and there the measured bias
+is at most $0.47$ points against effects of $1.06$ to $4.26$. The objection is
+sound in principle and empty in this data.
+
+\subsection{How much of the result is the solver?}
+
+The pre-registered rule aggregates the control group with a $\max$. A reader is
+entitled to ask what any weaker aggregation would have said, and what the
+result owes to the one arm we built ourselves.
+
+\input{tab/tab_aggsummary}
+
+Table~\ref{tab:aggsummary} answers both. Only the pre-registered $\max$ over
+the full four-arm group is negative everywhere. Against the mean of the control
+group the study reports $+7.97$ points; against the warm start alone, the
+comparison most common in the literature, it reports $+15.07$ points and is
+positive in every single group. That spread---from $+15.07$ to $-4.44$ on
+identical runs---is the paper's central claim restated as a sensitivity
+analysis.
+
+Removing the solver entirely is the most informative row. Against the maximum
+over the three learning arms, $\Delta$ averages $+5.66$ points but remains
+\emph{negative in 8 of 17 groups}: both Config~2 $m{=}128$ groups and all six
+7B groups. In other words, in nearly half the study the verdict does not depend
+on the solver at all; continued SFT alone is sufficient to overturn it. The
+solver is load-bearing in the 9 remaining groups, all at 0.5B and 1B.
+Per-group values are in Appendix~\ref{app:allarms}.
+
+\subsection{The two arms are not solving the same problems}
+
+The discordant counts in Table~\ref{tab:pergroup} carry information the
+$\Delta$ summary discards. In Config~1 at $m{=}2$, GRPO is right on 38 items
+the solver misses while the solver is right on 44 items GRPO misses: 82 of 282
+items are decided differently by the two arms. Their union reaches $78.01\%$
+against the better arm's $64.54\%$.
+
+Across all 17 groups the union of GRPO and the best control arm exceeds the
+better of the two by $9.02$ points on average (range $1.77$ to $16.57$), and
+the union of all five arms averages $75.37\%$ against a best-single-arm average
+of $60.67\%$. This is not a deployable method---selecting the right arm per
+item requires the answer---but it bounds what the framing costs. Asking which
+of a policy-gradient arm and a symbolic arm is stronger, and reporting the
+winner, discards the fact that on these tasks they are substantially
+complementary. A control-group protocol that reports the $\max$ is still the
+right instrument for validating a claimed gain; it is not, on this evidence,
+the right instrument for deciding what to build.

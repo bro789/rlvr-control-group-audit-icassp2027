@@ -1,0 +1,15 @@
+% 由 analysis/solver_transfer_cross.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\caption{Solver transferability. Each solver is run unmodified on the other task's frozen test set, under the same clean-subset protocol. The narrative solver transfers and still beats all three learning arms of Config~1 at $m{=}2$; the table solver does not transfer at all, because it cannot parse a context that is not a JSON table and abstains on every item.}
+\label{tab:transfer}
+\begin{tabular}{lrrr}
+\toprule
+solver & home task & other task & retained \\
+\midrule
+built on CodeTAT-QA & 64.54 & 0.00 & 0\% \\
+built on CodeFinQA & 33.43 & 36.17 & 108\% \\
+\bottomrule
+\end{tabular}
+\end{table}

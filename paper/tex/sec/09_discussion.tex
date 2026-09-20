@@ -1,0 +1,224 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{What generalizes.}
+The specific numbers do not transfer beyond these two tasks; the design question
+does, and our scale sweep sharpens what that question is. The naive reading of
+the small-backbone result---``add a symbolic solver to your control group''---is
+already refuted by our own 7B data, where the solver is 15 points behind and
+contributes nothing. What survives both regimes is weaker and more portable: the
+control group must be broad enough that \emph{some} arm in it is competitive
+with RL under the conditions being reported, and it must be aggregated with a
+$\max$ so that the answer cannot be improved by choosing the opponent.
+Section~\ref{sec:statistics} quantifies the cost of neglecting this on our own
+runs: the same 17 groups report $+15.07$ points against the warm start alone,
+$+7.97$ against the mean of the control group, and $-4.44$ against its maximum.
+
+\paragraph{What the recommendation is not.}
+A reasonable objection is that ``aggregate with a $\max$ over a broad control
+group'' is unfalsifiable as guidance, since a sufficiently determined critic can
+always append one more arm until any result is negative. We agree that the
+prescription needs a boundary, and we do not think this paper establishes where
+it lies. Two properties distinguish our use of it from an open-ended ratchet.
+The arm set was fixed by pre-registration before the confirmatory task ran, so
+it could not grow in response to the result; and every arm receives the same
+demonstration budget, so no arm can be strengthened by spending resources the
+proposed method was denied. A protocol that fixes its arm set in advance and
+equalizes budgets is a test. One that adds arms after seeing the outcome is not.
+We make no claim to have found the right stopping rule for how broad a control
+group must be.
+
+\paragraph{Scope of the claim.}
+Two tasks, three backbones spanning $14\times$, one RL algorithm (GRPO), one
+task family (program-annotated financial QA), and deliberately scarce
+demonstration budgets. Three narrower scope conditions deserve to be stated
+plainly rather than inferred:
+
+\emph{One algorithm, not a family.} Every RL number in this paper is GRPO with
+one implementation. We have no evidence about PPO, RLOO, or the several GRPO
+variants that correct its known estimator biases~\cite{drgrpo2025}. Where this
+paper says ``RLVR'' as shorthand, the evidence underneath it is GRPO.
+
+\emph{One parameterization.} Every arm---including every baseline---trains a
+LoRA adapter at $r{=}16$, $\alpha{=}32$, learning rate $10^{-5}$. LoRA is
+applied symmetrically, so it is not an unfair handicap on the RL arm
+specifically, but it is a joint restriction on all arms and we cannot say
+whether full-parameter training would change the ordering. It was not listed as
+a threat in the conference version; it should have been.
+
+\emph{The clean filter is our own, and it cannot manufacture the result.} An
+item enters the study only if its gold program executes to its gold answer under
+our verifier ($282/288$ of the CodeTAT-QA test set, $664/795$ of CodeFinQA). The
+same verifier defines the training reward and grades the evaluation, which is
+internally consistent but invites the charge that we selected the items on which
+our conclusion holds. It cannot work that way. The filter is applied identically
+to all five arms, so scoring every discarded item as wrong for everyone
+multiplies each arm's accuracy by the same constant---$0.979$ for CodeTAT-QA,
+$0.835$ for CodeFinQA---and a positive rescaling cannot change the sign of a
+difference. We verified this directly: recomputing all 17 groups on the
+unfiltered test sets leaves \textbf{17 of 17} signs unchanged, with $\Delta$
+moving from $-4.44$ to $-4.00$ on average. No re-run was required; the objection
+fails on arithmetic.
+
+\emph{External calibration.} What the filter does affect is comparability of
+absolute numbers, so we place ours against the published BizBench baselines,
+which use the same $1\%$-relative-tolerance metric. On CodeTAT-QA our 7B arms
+reach $79$--$85\%$, above the reported $75.0\%$ for Mistral-7B and $70.9\%$ for
+CodeLlama-7B and in the band of CodeLlama-34B ($81.4\%$) and Mixtral-8x7B
+($83.9\%$); our 0.5B GRPO reaches $63.12\%$, near Llama-2-13B ($65.1\%$). On
+CodeFinQA our 1B arms reach up to $30.57\%$, comparable to MPT-30B ($31.0\%$)
+and Llama-2-13B ($33.4\%$). These are not weak systems for their size. The
+solver's $64.54\%$ sits between MPT-30B ($64.8\%$) and Llama-2-13B ($65.1\%$),
+which is itself a quantification of this paper's point: 440 lines of rules match
+a 13--30B model's few-shot performance on this task. One caveat about the
+comparison itself: our splits are the public BizBench release
+(\texttt{kensho/bizbench}), whose CodeFinQA and CodeTAT-QA test sets hold 795
+and 288 items and whose training sets hold 4{,}668 and 2{,}856---all four
+matching our copies exactly---whereas the BizBench paper's own table reports
+test sets of 844 and 392. We cannot reconcile that difference from the outside,
+so the published accuracies above should be read as the right order of magnitude
+for each model scale rather than as strictly paired comparisons.
+
+\paragraph{Threats to validity.}
+
+\emph{The RL arm's budget is the largest threat, and it is not resolved.}
+Section~\ref{sec:analysis} reports that no GRPO run completed one epoch over its
+prompt pool ($0.10$--$0.79$), and that at 7B only 50 to 82 prompts per run
+produced a non-zero group advantage. Both numbers point the same direction: our
+GRPO arm is small by contemporary standards, and most visibly so at the scale
+where this paper's generalization claim lives. The pre-registration fixed equal
+wall clock, which at a fixed per-token cost buys an order of magnitude less data
+at 7B than at 0.5B. We believe the 0.5B and 1B result is robust---there GRPO
+learns vigorously, beating every learning arm by up to 35 points, and still
+loses to the solver. We do not believe this study settles what a
+well-resourced GRPO run does at 7B, and readers should not take it to.
+
+\emph{Solver strength as a free parameter.} At 0.5B and 1B the solver sets the
+bar. Section~\ref{subsec:solvercost} gives its development protocol, its dev
+trajectory, its $7.46$-point dev-to-test penalty and its engineering cost, and
+the logs are published. The 7B result also removes this objection structurally:
+there the maximum is attained by continued SFT, an arm we did not design.
+Section~\ref{sec:statistics} shows the verdict is negative in 8 of 17 groups
+with the solver deleted from the control group entirely.
+
+\emph{The operating points were chosen inside the scarce regime.} This is true
+and it is by design: the pre-registered bands select the two smallest budgets
+reaching stated warm-start accuracy windows, which places both operating points
+well left of the $m \approx 1024$ crossing where learning arms overtake the
+solver. The claim is therefore explicitly confined to the demonstration-scarce
+regime. What we cannot offer is a confirmatory group past the crossing point: no
+frozen-test evaluation was run at $m \geq 256$ in Config~1, so the statement
+that the effect reverses there rests on dev dose curves rather than on the
+decision rule.
+
+\emph{Statistical power.} Under Holm correction across the family of 17, two
+groups are significant. The per-group minimum detectable effect is a median of
+$6.93$ points corrected, against measured effects with a median of $2.84$. The
+quantitative claim rests on six independent operating points agreeing in sign
+($p = 0.031$), not on per-group significance, and not on the count of 17.
+
+\emph{Dev-selection bias is three observations, not a measurement.} We report
+three instances where $\Delta$ is non-negative on dev and negative on the frozen
+test. Each is real and the $\beta{=}0$ case is instructive, but three instances
+identified after the fact do not establish the stated mechanism---that
+policy-gradient trajectories fluctuate more on dev than fine-tuning trajectories
+and so gain more from checkpoint selection. Measuring that would require
+per-arm dev-checkpoint variance across all groups, which our stored artifacts
+support only at 7B. We therefore state it as three observations consistent with
+a mechanism rather than as a measurement of one, and a reader should weigh
+contribution~(iii) accordingly: what is established is the practical point that
+a frozen test set changes three verdicts, not the explanation for why.
+
+\emph{Low absolute accuracy in Config~2.} The solver reaches only ${\sim}32\%$
+there, so all arms operate in a low band. This is why the study spans a two-fold
+difference in solver strength and a $14\times$ range in backbone; the sign is
+unchanged across all of it.
+
+\emph{One exclusion.} All 85 arm evaluations of the 17 reported groups are
+present. The single excluded group is the collapsed run of
+Section~\ref{sec:analysis}, whose $\Delta$ ($-19.73$) is more negative than any
+we report, so excluding it weakens rather than strengthens the result. The
+pre-registration did not specify an exclusion rule for training collapse; we
+adopted one after observing it, and we report the result both ways.
+
+\paragraph{What would change our mind, and what did.}
+A null result should say what would refute it. We named three things. A GRPO run
+at this scale with an order of magnitude more prompt coverage that beats
+$\max\mathcal{B}$ at any operating point. A confirmatory group past the
+$m \approx 1024$ crossing in which GRPO leads a control group including the
+solver. Or a task family in the same program-annotated setting where no
+deterministic arm is viable and GRPO still fails to beat continued SFT, which
+would indicate our result is about the solver rather than about the control
+group.
+
+\textbf{The first one fired.} At ten times the prompt coverage, the
+smallest-margin 7B cell reverses from $\Delta = -1.06$ to $+6.74$ and $+6.38$
+across two training seeds, clearing our own Go threshold with McNemar
+$p = 0.0013$ and $0.0029$ (Appendix~\ref{app:followup}). We report it in the
+abstract, in Section~\ref{sec:scale}, in Section~\ref{sec:analysis} and here,
+because a paper that specifies its own refutation conditions and then meets one
+of them owes the reader the result in the same places it made the claim.
+
+What survives is bounded rather than broken. The reversal is a budget effect,
+not a defect effect: a matched-budget run that raises informative prompts from
+82 to 120 lands at $+1.06$ with an interval of $[-2.13,+4.26]$, statistically
+where the registered $-1.06$ already was. So under the pre-registered
+protocol---equal wall clock for every arm---the finding holds at 7B; given ten
+times that budget it does not. Config~3 therefore marks where this study's claim
+ends, and the quantitative core is the 11 groups at 0.5B and 1B. The other two
+tests we have not attempted.
+
+\paragraph{On reporting negative results.}
+The pre-registered protocol accepted both outcomes in advance, including
+explicit language forbidding us from weakening the solver if GRPO won. We
+mention this because a null result is only informative if the analysis could
+have come out otherwise. In the same spirit, this extended version reports the
+two findings that most damage our own case---two of seventeen groups significant
+under our own correction, and an RL arm that never completed an epoch---in the
+main text rather than in an appendix.
+
+\section{Conclusion}
+
+We pre-registered a decision rule that compares GRPO against the maximum of a
+four-arm control group, one arm of which does not learn, and executed it on two
+tasks and three backbones spanning $14\times$ in scale. All 17 frozen-test
+effect sizes are negative, from $-1.06$ to $-16.42$ points. At 0.5B, the same
+runs judged against a learning-only control group would have been reported as
+substantial successes---GRPO beats every learning baseline there by up to 35
+points.
+
+The mechanism is not one strong baseline but a moving one. At 0.5B and 1B a
+deterministic solver attains the maximum in all 11 groups, because it is flat in
+the demonstration budget while every learning arm scales with it. At 7B the
+solver falls 15 points behind and drops out of contention---exactly as the
+``gains emerge with capability'' account predicts---and $\Delta$ remains negative
+because continued SFT takes its place. Neither ablations (the solver is $100\%$
+rule-derived) nor audits (zero constant-program shortcuts in 57{,}517 positive
+samples) nor a hyperparameter sweep provides an escape; the sweep's one positive
+$\Delta$ appears on dev and reverses on the frozen test.
+
+This extended version adds the audit of our own instrument. The $\max$ in the
+decision rule does not manufacture the result: a cross-fitted estimator that
+selects the control arm on one half of the test set and scores it on the other
+is negative in 17 of 17 groups. The sampling arm usually proposed as the missing
+baseline is not deployable here, and even its oracle bound loses to the solver
+at three of four operating points. Against that, only two groups survive Holm
+correction, no GRPO run completed an epoch, and---most consequentially---the 7B
+configuration reverses at ten times the budget, so it bounds the claim rather
+than extending it. Within the registered protocol the negative sign is robust;
+the per-group effect sizes are not; and the scale evidence is a budget boundary.
+
+What generalizes is not the sign but the dependence. This study can now put
+three numbers on how much a reported RLVR effect moves without any change to the
+policy being evaluated: $19.5$ points for which control arm is nominated,
+$7.8$ for an order of magnitude of compute, and $3.0$ for the inference engine
+alone. An RLVR result reported without its comparison, its budget and its
+decoding stack attached is not yet a result.
+
+The practical recommendation is therefore not ``add a solver.'' It is: aggregate
+your control group with a maximum rather than nominating one opponent, populate
+it broadly enough that the aggregation can bind, fix the arm set before you see
+the result, and reserve a test set that selection never touches. Which arm ends
+up binding will depend on the regime---a solver in ours at small scale, plain
+continued SFT at 7B---and that is precisely why the choice cannot be made in
+advance by the party reporting the gain.

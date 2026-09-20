@@ -1,0 +1,31 @@
+{
+ "m": 256,
+ "seed": 2,
+ "dev_n": 200,
+ "lib_n": 256,
+ "variants": {
+  "rules": {
+   "acc": 0.355,
+   "n_hit": 71,
+   "n_total": 200,
+   "coverage": 1.0
+  },
+  "retrieval": {
+   "acc": 0.0,
+   "n_hit": 0,
+   "n_total": 200,
+   "coverage": 0.0
+  },
+  "full": {
+   "acc": 0.355,
+   "n_hit": 71,
+   "n_total": 200,
+   "coverage": 1.0
+  }
+ },
+ "decomposition": {
+  "rules_alone": 0.355,
+  "retrieval_marginal": 0.0,
+  "retrieval_alone": 0.0
+ }
+}

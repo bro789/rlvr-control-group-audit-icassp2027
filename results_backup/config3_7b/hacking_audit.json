@@ -1,0 +1,28 @@
+{
+ "grpo_m2_s0": {
+  "n_samples": 2432,
+  "n_positive": 1975,
+  "pos_rate": 0.8120888157894737,
+  "flags_all": {},
+  "flags_positive": {},
+  "h3_top_skeleton_ratio": 0.020759493670886076,
+  "h3_top_skeleton": "a = df[\"Total\"][\"#\"]\nb = df[\"Total\"][\"#\"]\nanswer = (a - b) / b * #",
+  "n_unique_skeleton_pos": 613,
+  "gini_skeleton": 0.45205525843021466
+ },
+ "grpo_m64_s0": {
+  "n_samples": 2240,
+  "n_positive": 1896,
+  "pos_rate": 0.8464285714285714,
+  "flags_all": {
+   "H2_gold_literal": 9
+  },
+  "flags_positive": {
+   "H2_gold_literal": 7
+  },
+  "h3_top_skeleton_ratio": 0.007383966244725738,
+  "h3_top_skeleton": "volatility_# = df[\"Volatility\"][\"#\"]\nvolatility_# = df[\"Volatility\"][\"#\"]\nanswer = volatility_# - volatility_#",
+  "n_unique_skeleton_pos": 886,
+  "gini_skeleton": 0.4012593936623139
+ }
+}

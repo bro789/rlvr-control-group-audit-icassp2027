@@ -1,0 +1,33 @@
+% 由 analysis/gen_extended_stats.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Zero-advantage groups across all 18 GRPO runs, read from each run's recorded metadata. A prompt group whose 8 samples all receive the same reward has zero group-relative advantage and contributes no gradient. The 7B runs have the highest positive-reward rate in the study and the fewest informative prompts.}
+\label{tab:zeroadv}
+\begin{tabular}{llrrrrrrr}
+\toprule
+backbone & $m$/seed & steps & groups & all-0 & all-1 & zero-var & informative & pos.\ rate \\
+\midrule
+Qwen2.5-0.5B & 2/0 & 242 & 1936 & 565 & 652 & 62.9\% & \textbf{719} & 0.527 \\
+ & 2/1 & 280 & 2240 & 625 & 871 & 66.8\% & \textbf{744} & 0.560 \\
+ & 2/2 & 258 & 2064 & 572 & 748 & 64.0\% & \textbf{744} & 0.551 \\
+ & 64/0 & 190 & 1520 & 381 & 387 & 50.5\% & \textbf{752} & 0.522 \\
+ & 64/1 & 197 & 1576 & 348 & 427 & 49.2\% & \textbf{801} & 0.544 \\
+ & 64/2 & 206 & 1648 & 386 & 441 & 50.2\% & \textbf{821} & 0.540 \\
+Llama-3.2-1B & 128/0 & 98 & 784 & 544 & 1 & 69.5\% & \textbf{239} & 0.081 \\
+ & 128/1$^{\dagger}$ & 110 & 880 & 880 & 0 & 100.0\% & \textbf{0} & 0.000 \\
+ & 128/2 & 102 & 816 & 549 & 2 & 67.5\% & \textbf{265} & 0.092 \\
+ & 256/0 & 111 & 888 & 463 & 16 & 53.9\% & \textbf{409} & 0.196 \\
+ & 256/1 & 111 & 888 & 461 & 12 & 53.3\% & \textbf{415} & 0.194 \\
+ & 256/2 & 123 & 984 & 460 & 36 & 50.4\% & \textbf{488} & 0.239 \\
+Qwen2.5-7B & 2/0 & 38 & 304 & 29 & 207 & 77.6\% & \textbf{68} & 0.812 \\
+ & 2/1 & 36 & 288 & 42 & 185 & 78.8\% & \textbf{61} & 0.772 \\
+ & 2/2 & 45 & 360 & 43 & 267 & 86.1\% & \textbf{50} & 0.823 \\
+ & 64/0 & 35 & 280 & 18 & 180 & 70.7\% & \textbf{82} & 0.846 \\
+ & 64/1 & 39 & 312 & 24 & 206 & 73.7\% & \textbf{82} & 0.837 \\
+ & 64/2 & 35 & 280 & 21 & 194 & 76.8\% & \textbf{65} & 0.826 \\
+\bottomrule
+\end{tabular}
+\\[2pt]\footnotesize $^{\dagger}$The excluded run: every group all-zero.
+\end{table}

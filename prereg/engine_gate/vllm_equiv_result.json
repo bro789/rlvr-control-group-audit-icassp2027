@@ -1,0 +1,124 @@
+{
+ "a": "hf",
+ "b": "vllm",
+ "n": 200,
+ "acc_a": 0.41,
+ "acc_b": 0.38,
+ "reward_agreement": 0.91,
+ "n_disagree": 18,
+ "text_identical_rate": 0.385,
+ "only_hf_correct": 12,
+ "only_vllm_correct": 6,
+ "mcnemar_chi2": 1.3888888888888888,
+ "verdict": "❌ 不等价，不可换引擎",
+ "flips": [
+  {
+   "i": 0,
+   "gold": "36.0999984741",
+   "hf": "restrictions_lost = 1151\nrestricted_stock_units_outstanding = 3188\npercent_restrictions_lost = restrictions_lost / restricted_stock_units_outstanding\nanswer = percent_restrictions_lost * 100",
+   "vllm": "restrictions_lost = 1151\nrestrictions_total = 3972\npercent_lost = restrictions_lost / restrictions_total\nanswer = percent_lost * 100"
+  },
+  {
+   "i": 4,
+   "gold": "6308.2998046875",
+   "hf": "revenue_2008 = 6197\nrevenue_2009 = 6305\nrevenue_2008_avg = (revenue_2008 + revenue_2009) / 2\nanswer = revenue_2008_avg",
+   "vllm": "revenue_2008 = 6197\nrevenue_2009 = 6305\nrevenue_2008_2009 = revenue_2008 - revenue_2009\naverage_revenue = revenue_2008_2009 / 3\nanswer = average_revenue"
+  },
+  {
+   "i": 21,
+   "gold": "50.2700004578",
+   "hf": "balance_2016 = 1940\nbalance_2015 = 1291\nincrease = balance_2016 - balance_2015\npercent_increase = increase / balance_2015\nanswer = percent_increase * 100",
+   "vllm": "balance_2016 = 1940\nbalance_2015 = 1291\nincrease = balance_2016 - balance_2015\nanswer = increase"
+  },
+  {
+   "i": 29,
+   "gold": "14.6000003815",
+   "hf": "regulatory_liabilities_2018 = 1907\nregulatory_liabilities_2017 = 1664\nincrease = regulatory_liabilities_2018 - regulatory_liabilities_2017\npercent_increase = increase / regulatory_liabilities_2017\nanswer = percent_increase * 100",
+   "vllm": "regulatory_liabilities_2018 = 1907\nregulatory_liabilities_2017 = 1664\nincrease = regulatory_liabilities_2018 - regulatory_liabilities_2017\nanswer = increase"
+  },
+  {
+   "i": 34,
+   "gold": "13.8000001907",
+   "hf": "percent_change = (677 - 595) / 595\nanswer = percent_change * 100",
+   "vllm": "growth_rate = 677 / 595\nanswer = growth_rate * 100"
+  },
+  {
+   "i": 53,
+   "gold": "1736",
+   "hf": "long_term_debt_change = 1864 - 128 \ncash_flow_effect = long_term_debt_change * 4.55 \nanswer = cash_flow_effect",
+   "vllm": "long_term_debt_change = 1864 - 128\nanswer = long_term_debt_change"
+  },
+  {
+   "i": 56,
+   "gold": "121.9100036621",
+   "hf": "start_price = 100\nend_price = 221.91\npercent_change = (end_price - start_price) / start_price\nanswer = percent_change * 100",
+   "vllm": "start_price = 221.91\nend_price = 151.44\npercent_change = (end_price - start_price) / start_price\nanswer = percent_change * 100"
+  },
+  {
+   "i": 88,
+   "gold": "19.5",
+   "hf": "liability = 1.5\nestimated_exposure = 1.8 + 7.7 + 8.8 + 4.3 + 2.4\npercent_liability = liability / estimated_exposure\nanswer = percent_liability * 100",
+   "vllm": "liability = 1.5\nestimated_exposure = 7.7\npercent_liability = liability / estimated_exposure\nanswer = percent_liability * 100"
+  },
+  {
+   "i": 121,
+   "gold": "67",
+   "hf": "american_airlines_outperform = 219\namex_airline_index = 152\npercent_outperform = (american_airlines_outperform - amex_airline_index) / amex_airline_index\nanswer = percent_outperform * 100",
+   "vllm": "american_airlines_group_outperform = 219\namex_airline_index_outperform = 152\nanswer = american_airlines_group_outperform - amex_airline_index_outperform"
+  },
+  {
+   "i": 134,
+   "gold": "71.5",
+   "hf": "assets_allocated_to_in_service_real_estate_assets = 64.1\ntotal_purchase_price = 89.7\npercent_in_service_real_estate_assets = assets_allocated_to_in_service_real_estate_assets / total_purchase_price\nanswer = percent_in_service_real_estate_assets * 100",
+   "vllm": "assets_allocated = 32.1 + 60.5 + 219.9\nassets_total = 89.7\npercent_in_service = assets_allocated / assets_total\nanswer = percent_in_service * 100"
+  },
+  {
+   "i": 135,
+   "gold": "4.4000000954",
+   "hf": "profit_margin_2013 = 271\nsales_2013 = 6205\nprofit_margin = profit_margin_2013 - sales_2013\nanswer = profit_margin / sales_2013 * 100",
+   "vllm": "profit_margin_2013 = 271\nsales_2013 = 6205\nprofit_margin = profit_margin_2013 / sales_2013\nanswer = profit_margin * 100"
+  },
+  {
+   "i": 139,
+   "gold": "0.5400000215",
+   "hf": "citi_return_2007 = 66.10\nsnp_return_2007 = 122.15\nratio_2007 = citi_return_2007 / snp_return_2007\nanswer = ratio_2007",
+   "vllm": "citi_return = 66.10\nsnp_return = 122.15\nsnp_index = 115.79\nsnp_financial_index = 119.19\nciti_snp_return = citi_return - snp_return\nciti_snp_index = citi_return\nciti_snp_financial_index = snp_index\nanswer = citi_snp_return / citi_snp_index"
+  },
+  {
+   "i": 143,
+   "gold": "53.5",
+   "hf": "debt_and_capital_lease_obligations_percent = 896 / 13058\nanswer = debt_and_capital_lease_obligations_percent * 100",
+   "vllm": "debt_and_capital_lease_obligations = 6989\ntotal_payments_due = 13058\npercent_debt_and_capital_lease_obligations = debt_and_capital_lease_obligations / total_payments_due\nanswer = percent_debt_and_capital_lease_obligations * 100"
+  },
+  {
+   "i": 146,
+   "gold": "82.0999984741",
+   "hf": "liability_balance_change = 227.0 - 144.9\nanswer = liability_balance_change",
+   "vllm": "liability_balance = 227.0\nliability_balance_2019 = 144.9\nchange = liability_balance_2019 - liability_balance\nanswer = change"
+  },
+  {
+   "i": 149,
+   "gold": "3200",
+   "hf": "cng_fleet = 0.20\ncng_fleets_operated = 0.13\ncng_fleets_total = cng_fleet * 16000\nanswer = cng_fleets_total",
+   "vllm": "cng_fleet = 0.20\ncng_fleet_total = 0.13\nanswer = cng_fleet / cng_fleet_total * 100"
+  },
+  {
+   "i": 177,
+   "gold": "94",
+   "hf": "long_term_debt_2010 = 41431\ntotal_obligations_2010 = 44301\npercent_long_term_debt = long_term_debt_2010 / total_obligations_2010\nanswer = percent_long_term_debt * 100",
+   "vllm": "long_term_debt_2010 = 41431\nlong_term_debt_total = 130377\npercent_long_term_debt = long_term_debt_2010 / long_term_debt_total\nanswer = percent_long_term_debt * 100"
+  },
+  {
+   "i": 180,
+   "gold": "54.2000007629",
+   "hf": "allowance_for_borrowed_funds_used_2018 = 13\nallowance_for_other_funds_used_2018 = 24\npercent_allowance_for_borrowed_funds_used_2018 = allowance_for_borrowed_funds_used_2018 / (allowance_for_borrowed_funds_used_2018 + allowance_for_other_funds_used_2018)\nanswer = percent_allowance_for_borrowed_funds_used_2018 * 100",
+   "vllm": "allowance_for_borrowed_funds_used_2018 = 13\nallowance_for_other_funds_used_2018 = 24\npercent_allowance_for_borrowed_funds_used_2018 = allowance_for_borrowed_funds_used_2018 / allowance_for_other_funds_used_2018\nanswer = percent_allowance_for_borrowed_funds_used_2018 * 100"
+  },
+  {
+   "i": 191,
+   "gold": "162.5",
+   "hf": "increase_2017 = 21 - 8\ndecrease_2016 = 8 - 32\npercent_increase_2017 = increase_2017 / 8\npercent_decrease_2016 = decrease_2016 / 32\nanswer = percent_increase_2017 * 100",
+   "vllm": "increase_2017 = 21 - 8\ndecrease_2016 = 8 - 32\npercent_increase_2017 = increase_2017 / 32\nanswer = percent_increase_2017 * 100"
+  }
+ ]
+}

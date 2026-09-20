@@ -1,0 +1,93 @@
+\section{Scale: the winning baseline changes identity}
+\label{sec:scale}
+
+The standing objection to everything above is that 0.5B and 1B models are small
+enough that RLVR is not expected to help, making the negative result
+unsurprising. We test that objection rather than concede it: the same
+CodeTAT-QA task, the same protocol, the same two budgets, three seeds, on
+Qwen2.5-7B-Instruct.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\caption{Frozen-test accuracy (\%) at 7B, all three seeds. The solver is now
+15 points behind and irrelevant; continued SFT attains the maximum in all six
+groups and GRPO trails it in all six.}
+\label{tab:scale}
+\begin{tabular}{rr rrrrr r}
+\toprule
+$m$ & seed & solver & $W_m$ & c-SFT & RS-SFT & GRPO & $\Delta$ \\
+\midrule
+2  & 0 & 64.54 & 71.28 & \textbf{79.79} & 75.18 & 76.60 & $-3.19$ \\
+2  & 1 & 64.54 & 69.86 & \textbf{77.66} & 76.95 & 74.82 & $-2.84$ \\
+2  & 2 & 64.54 & 70.57 & \textbf{76.95} & 74.82 & 75.18 & $-1.77$ \\
+64 & 0 & 64.54 & 79.08 & \textbf{81.91} & 80.50 & 79.79 & $-2.13$ \\
+64 & 1 & 64.54 & 78.72 & \textbf{80.50} & 80.14 & 79.43 & $-1.06$ \\
+64 & 2 & 64.54 & 79.43 & \textbf{85.11} & 81.21 & 80.85 & $-4.26$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:scale} shows the transition. The solver's accuracy is unchanged
+by construction---$64.54\%$, the same number as at 0.5B, because it contains no
+model---but the learning arms have moved past it. Warm-start SFT on two
+demonstrations now reaches $69.86$--$71.28\%$, and every arm at $m{=}64$ is
+around $80\%$. The crossing point predicted by the dose-response curves of
+Section~\ref{sec:results} is real and lies between 1B and 7B on this task. The
+``gains emerge with capability'' account is correct about the solver.
+
+It is not correct about $\Delta$. In all six groups the maximum is attained by
+\textbf{continued SFT}---$76.95$--$85.11\%$---and GRPO trails it by $1.06$ to
+$4.26$ points (mean $-2.54$). Scaling the backbone $14\times$ replaced the arm
+that beats GRPO; it did not produce a setting in which GRPO leads.
+
+\paragraph{What this does to the claim.}
+Within the registered budget it generalizes it. Had the solver kept winning at
+7B, a reader could reasonably suspect we had over-engineered one baseline for
+one regime. Instead the solver exits exactly where the scaling account says it
+should, and the arm that replaces it is continued SFT---an arm present in
+essentially every RLVR paper, requiring no engineering, and impossible to
+characterize as an exotic construction. The methodological requirement that
+survives both regimes is not ``include a solver'' but ``make the control group
+broad enough that you would notice, and aggregate it with a $\max$.''
+
+\paragraph{But this configuration does not answer the question it was added for,
+and we should say so before a reader finds out.}
+Config~3 exists to test the objection that 0.5B and 1B are simply too small. It
+cannot settle that objection, because at 7B the registered wall-clock budget
+buys an order of magnitude less data than it does at 0.5B: $0.13$ epochs over
+the prompt pool against $0.53$--$0.79$. We re-ran this section's
+smallest-margin cell---$m{=}64$, seed~1, the one most favourable to GRPO---at
+ten times the coverage, and it reverses decisively, to $\Delta = +6.74$ and
+$+6.38$ across two training seeds, clearing the pre-registered Go threshold
+(Appendix~\ref{app:followup}). At the registered budget the result holds,
+including under a run that removes the zero-advantage degeneracy we diagnose in
+Section~\ref{sec:analysis}. \textbf{What Config~3 demonstrates is therefore a
+budget boundary, not a capability one.} We keep it in the paper for that
+reason---knowing where a null result stops is worth more than a scale ladder
+that does not hold---but the quantitative weight of this study rests on the 11
+groups at 0.5B and 1B, not on these six.
+
+\paragraph{Statistical caveats.}
+Effect sizes at 7B are smaller than at 0.5B/1B: $-1.06$ to $-4.26$ points on
+$n{=}282$ is 3 to 12 items, and the three learning arms lie within a few points
+of one another, so which of them attains $\max \mathcal{B}$ is itself sensitive
+to sampling noise. Within the registered budget the 7B groups accordingly carry
+a qualitative claim---the arm that beats GRPO changes identity, and GRPO is not
+that arm in any of the six---rather than an effect size, and past that budget
+they do not carry even that. The quantitative result rests on the 11
+groups at 0.5B and 1B, where $\max \mathcal{B}$ is attained by a deterministic
+solver that leads the nearest learning arm by \emph{at least} $8.5$ points in
+Config~1 ($8.51$ to $36.88$ points across the six groups; the quoted figure is
+the smallest, not the typical): there the identity of the maximum is not in
+question, and no selection over arms enters the estimate.
+
+The largest 7B margin ($-4.26$ points, Config~3 $m{=}64$ seed~2) has an
+uncorrected McNemar $p$ of $0.017$. Under the Holm correction this paper
+declares across its family of 17 groups, that value becomes $0.254$ and is
+\textbf{not} significant; the conference version of this paper quoted the
+uncorrected figure alongside a stated Holm procedure, which was inconsistent.
+No 7B group is significant after correction. The 7B claim is the qualitative
+one stated above, supported by six of six groups agreeing in sign
+(Section~\ref{sec:statistics}), and by nothing stronger.

@@ -1,0 +1,414 @@
+\section{Ruling Out the Obvious Objections}
+\label{sec:analysis}
+
+A negative result of this shape invites four specific rebuttals: the solver is
+memorizing, its strength is generic to any non-learning method, GRPO's score is
+a reward-hacking artifact, and GRPO is simply mistuned. Each is testable; none
+survives. We then report the one run we excluded, ask whether our GRPO is
+simply under-trained, and state the solver's cost.
+
+\subsection{``The solver is just retrieving gold answers''}
+
+If the solver's accuracy came from copying gold programs out of its retrieval
+library, it would be a memorization artifact rather than a baseline. We
+decompose it into three variants: \textbf{A} uses only the hand-written rule
+path; \textbf{B} uses only retrieval; \textbf{C} is the deployed configuration
+(rules first, retrieval as fallback).
+
+\begin{table}[t]
+\centering
+\small
+\caption{Solver ablation (dev, mean of 3 seeds). Retrieval never fires: its
+marginal contribution $C-A$ is $+0.00$ points at all ten Config~1 budgets.}
+\label{tab:ablation}
+\begin{tabular}{rrrr r}
+\toprule
+$m$ & A: rules & B: retrieval & C: deployed & $C-A$ \\
+\midrule
+\multicolumn{5}{l}{\textit{Config~1 (all 10 budgets identical)}} \\
+$0 \ldots 2446$ & 72.00 & 0.00 & 72.00 & $+0.00$ \\
+\midrule
+\multicolumn{5}{l}{\textit{Config~2}} \\
+128 & 36.00 & 0.00 & 35.33 & $-0.67$ \\
+256 & 35.67 & 0.00 & 35.33 & $-0.33$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ablation} shows the retrieval-only variant scores $0.00\%$
+everywhere: it never produces an accepted program. Across all ten Config~1
+budgets and three seeds---thirty measurements---$A$, $C$ and their difference
+are constant at $72.00\%$, $72.00\%$ and $+0.00$ points. In Config~2 the
+deployed variant differs from the rule-only path by $-0.33$ to $-0.67$
+points---one to two items on the 200-item dev subset, i.e.\ within noise---so
+retrieval contributes nothing measurable on either configuration. The solver's
+ability is therefore entirely symbolic. This
+also explains the flat dose curve: with retrieval never firing, the
+demonstration budget has no channel through which to affect the solver at all.
+
+\subsection{``Any non-learning baseline would look that strong''}
+
+A second objection is that the solver's advantage demonstrates nothing about
+symbolic competence: on a task whose answers are executable programs, perhaps
+any method that skips training lands near the same place. The natural test is
+the other obvious non-learning option: prompt the base model directly to emit a
+program, with the same $m$ demonstrations used as few-shot examples. This is
+Program-of-Thought / PAL prompting~\cite{pot2022,pal2023}---no gradient steps
+at all.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Frozen-test accuracy (\%) of the two non-learning options. Prompting
+the base model directly is by far the weakest arm in both configurations, so
+the solver's advantage does not come free with skipping training.}
+\label{tab:pot}
+\begin{tabular}{lrr}
+\toprule
+& Config 1 & Config 2 \\
+\midrule
+solver (symbolic rules)          & 64.54 & 32.08--32.83 \\
+PoT / PAL prompting (no training) & 9.93--16.67 & 0.75--1.36 \\
+\midrule
+GRPO (RL)                        & 58.51--63.12 & 16.11--30.57 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:pot} gives the result over the eleven groups of
+Table~\ref{tab:main}. Few-shot prompting reaches $13.30\%$ on average in
+Config~1 and $1.00\%$ in Config~2---the weakest arm in the entire study, far
+below both the solver and GRPO. Two things follow. First, the solver's
+strength is specific rather than generic: the most obvious alternative
+non-learning baseline is dramatically worse, so what the solver contributes is
+genuine symbolic competence rather than a free advantage of skipping training. Second, RLVR is doing substantial work---GRPO improves over
+prompting the same base model by 44 to 50 points across the Config~1
+groups---which is precisely why the comparison matters: a method that clearly
+helps can still be the wrong way to spend the budget.
+
+\subsection{``GRPO's score is inflated by verifier hacking''}
+
+If GRPO were exploiting the reward checker---emitting constant programs,
+inlining the gold value, or collapsing onto one template---its accuracy would
+be an artifact and the comparison meaningless. We audit reward-dump records across the 14 GRPO runs whose reward dumps were retained, spanning all three backbones.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Verifier-hacking audit over the 14 GRPO runs whose reward dumps were
+retained. H1: constant program; H4: no-op arithmetic; H3: share of positive
+samples under the single most frequent code skeleton.}
+\label{tab:hacking}
+\begin{tabular}{lrrrrr}
+\toprule
+& samples & positive & H1 & H4 & H3 \\
+\midrule
+Config~1 (6 runs)      & 87{,}872 & 47{,}616 & 0 & 4  & $\leq 0.9\%$ \\
+Config~2 (6 runs)      & 37{,}933 & 6{,}030  & 0 & 23 & $\leq 1.5\%$ \\
+Config~3, 7B (2 runs)  & 4{,}672  & 3{,}871  & 0 & 0  & $\leq 2.1\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:hacking} reports the result. Constant-program shortcuts occur
+\textbf{zero} times in 57{,}517 positive-reward samples---the verifier's
+anti-constant guard holds. No-op arithmetic appears 27 times ($0.05\%$).
+Template collapse is absent: the most frequent code skeleton accounts for at
+most $2.1\%$ of positive samples, with skeleton Gini coefficients between
+$0.06$ and $0.45$, indicating a broadly distributed solution space.
+Gold-literal matches are rare ($0.19\%$) and expected on these tasks, where
+gold answers are computed from context numbers.
+
+GRPO's $16.1$--$80.9\%$ frozen-test accuracies across the three backbones
+therefore reflect genuine program synthesis. That is precisely what makes the comparison meaningful: a
+policy that is really solving the task still loses to a solver that never
+learned.
+
+\subsection{``You did not tune GRPO properly''}
+
+A fourth objection is that the negative result holds only at our particular
+hyperparameters. We sweep the knob most likely to matter---the KL coefficient
+$\beta$---at Config~1's higher operating budget, in its smallest-margin seed
+($m{=}64$, seed~2), and evaluate every resulting policy on both dev and the
+frozen test set.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\caption{GRPO hyperparameter sweep, Config~1 $m{=}64$, seed 2 (solver: 72.00
+dev / 64.54 test). $\beta{=}0$ is the only setting whose $\Delta$ turns
+positive---and only on dev.}
+\label{tab:sweep}
+\begin{tabular}{llrrrr}
+\toprule
+$\beta$ & temp & dev & test & $\Delta_{\text{dev}}$ & $\Delta_{\text{test}}$ \\
+\midrule
+0.04 & 1.0 & 68.00 & 61.70 & $-4.00$ & $-2.84$ \\
+0.0  & 1.0 & 73.50 & 62.41 & $\mathbf{+1.50}$ & $\mathbf{-2.13}$ \\
+0.2  & 1.0 & 58.00 & 51.42 & $-14.00$ & $-13.12$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:sweep} contains the sharpest single observation in this paper.
+Removing the KL penalty entirely ($\beta{=}0$) does lift GRPO above the solver
+\emph{on dev}, by $1.50$ points---the only positive $\Delta$ any setting
+produced. On the frozen test set the same policy scores $62.41\%$ against the
+solver's $64.54\%$: $\Delta = -2.13$ points. The reversal is a selection
+artifact, not an effect.
+
+This is one of three independent instances of the same phenomenon
+(Section~\ref{sec:results}): Config~1 at $m{=}2$ gave $+0.50$ on dev against
+$-3.90$ on the frozen test, and the 7B $m{=}2$ seed-2 group gave $+1.50$
+against $-1.77$. In all three, dev favored RL and the frozen test did not. Had we followed the common practice of reporting dev numbers after a
+hyperparameter search, we would have published the opposite conclusion---from
+the same runs.
+
+\subsection{One excluded run}
+
+One group (Config 2, $m=128$, seed 1) experienced training collapse, ending with a zero positive-reward rate. We exclude this run as an infrastructure/training failure rather than an algorithmic property; notably, including it ($\Delta = -19.73$) would further strengthen our negative finding.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Positive-reward rate across all 18 GRPO runs. One run, on the 1B
+backbone at the scarcest budget, ends at zero and is excluded.}
+\label{tab:stability}
+\begin{tabular}{lrrr}
+\toprule
+Backbone & budget & runs & positive-reward rate \\
+\midrule
+Qwen2.5-0.5B & 2, 64   & 6 & 0.522--0.560 \\
+Llama-3.2-1B & 128     & 3 & 0.081, 0.092, \textbf{0.000} \\
+Llama-3.2-1B & 256     & 3 & 0.194--0.239 \\
+Qwen2.5-7B   & 2, 64   & 6 & 0.772--0.846 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:stability} places it in context: the collapse is confined to the
+weakest backbone at the scarcest budget, and every other run in the study
+sustains a positive reward rate throughout training.
+
+\subsection{Is our GRPO simply under-trained?}
+
+At 7B, GRPO ranks third of five arms on seed-averaged accuracy, behind
+continued SFT and RS-SFT. Since
+beating SFT is RLVR's core claim, a reader should ask whether our GRPO is
+broken rather than our conclusion interesting. Four pieces of evidence say it
+is not.
+
+First, \emph{it works where it should}: at 0.5B, GRPO beats every learning arm
+by wide margins---$62.41\%$ against warm-start's $15.60\%$ and continued SFT's
+$24.47\%$ at $m{=}2$. A broken implementation would not produce a
+35-point gain in one regime and a 3-point deficit in another.
+
+Second, \emph{the pre-registered budget was consumed}: every GRPO run reached
+its 5700-second cap with 2240--17920 verifier calls and 131k--947k generated
+tokens. Two qualifications are needed here, both of which the conference
+version of this paper omitted.
+
+The first concerns what ``matched compute'' means. GRPO receives the same wall
+clock as continued SFT, which is the arm attaining $\max\mathcal{B}$ in all six
+7B groups, and vastly more than the solver, which attains it in the other
+eleven and runs on CPU in seconds. But GRPO does \emph{not} exceed every arm on
+every axis: RS-SFT generates three to seven times more tokens than GRPO in
+Config~1 (Table~\ref{tab:compute}). RS-SFT never attains $\max\mathcal{B}$ in
+any of the 17 groups, so this does not enter $\Delta$---but the blanket claim
+that GRPO received at least as much compute as the arms it is compared with is
+true only on the wall-clock axis and only against the arms that actually bind.
+
+\input{tab/tab_compute}
+
+The second qualification is more serious, and it is the strongest limitation in
+this study. Each prompt is sampled 8 times, so the verifier-call counts above
+imply that GRPO visited 280--2240 distinct prompts. Against pools of 2846 and
+4035 items, \textbf{no GRPO run in this study completed even one epoch}:
+
+\begin{center}
+\begin{tabular}{llrrr}
+\toprule
+config & $m$ & verifier calls & distinct prompts & epochs over pool \\
+\midrule
+Config~1 (0.5B) & 2   & 15488--17920 & 1936--2240 & 0.68--0.79 \\
+Config~1 (0.5B) & 64  & 12160--13184 & 1520--1648 & 0.53--0.58 \\
+Config~2 (1B)   & 128 & 6272--7040   & 784--880   & 0.19--0.22 \\
+Config~2 (1B)   & 256 & 7104--7872   & 888--984   & 0.22--0.24 \\
+Config~3 (7B)   & 2   & 2304--2880   & 288--360   & 0.10--0.13 \\
+Config~3 (7B)   & 64  & 2240--2496   & 280--312   & 0.10--0.11 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Coverage is worst exactly where the paper's generalization claim lives: at 7B,
+GRPO saw roughly a tenth of the available prompts. Equal wall clock at a fixed
+per-token cost buys an order of magnitude less data at 7B than at 0.5B, and our
+pre-registration fixed the seconds rather than the data. We do not think this
+explains the result---the argument continues below---but a reader who believes
+that RLVR needs multiple epochs to pay off has not been answered by this study,
+and we do not claim otherwise.
+
+Third, \emph{the policy is genuinely solving}: the audit of
+Table~\ref{tab:hacking} covers the 7B runs directly and finds zero
+constant-program shortcuts, zero no-op arithmetic, and a top-skeleton share of
+$2.1\%$ over 3871 positive samples.
+
+\input{tab/tab_zeroadv}
+
+The conference version of this paper continued the third argument by noting
+that the 7B positive-reward rate, $0.772$--$0.846$, is the highest of the three
+backbones, and read that as evidence that the 7B policy was training
+successfully. \textbf{That inference is backwards, and we retract it.} GRPO's
+advantage is computed within a group of samples drawn from the same prompt; if
+all eight samples receive the same reward the group's advantage is zero and it
+contributes no gradient. A high positive-reward rate therefore implies
+\emph{more} degenerate groups, not more learning.
+
+Table~\ref{tab:zeroadv} makes the size of the effect visible. At 7B, between
+$70.7\%$ and $86.1\%$ of prompt groups are all-correct or all-wrong, leaving
+\textbf{50 to 82 informative prompts for an entire run}. At 0.5B the same
+quantity is 719 to 821. The 7B runs are thus training on roughly an order of
+magnitude less gradient signal than the 0.5B runs that this study reads as its
+positive control. The excluded Config~2 run appears here in its proper form:
+$880$ of $880$ groups all-zero, zero informative prompts.
+
+The honest position is that the third argument survives only in its first half.
+The 7B policy is solving the task rather than gaming the verifier, and that
+much the audit establishes. It is \emph{not} established that the 7B GRPO arm
+received enough gradient signal to represent what GRPO can do at that scale.
+
+We subsequently tested that directly rather than leaving it as a caveat, and the
+answer is that the 7B arm was indeed under-trained: at ten times the coverage
+the smallest-margin 7B cell reverses from $-1.06$ to $+6.74$
+(Appendix~\ref{app:followup}). Two things about that result belong here. It is a
+\emph{budget} effect and not a degeneracy effect---a matched-budget run that
+raises informative prompts from 82 to 120 moves $\Delta$ to $+1.06$ with an
+interval of $[-2.13,+4.26]$, which is the same place as the original. And the
+degeneracy does not improve with training: across $10.6\times$ the steps the
+zero-advantage fraction \emph{rose} from $73.7\%$ to $86.0\%$, so the win came
+from brute force rather than from better use of the signal. Section~\ref{sec:scale}
+states what this costs the 7B configuration.
+
+Fourth, \emph{tuning does not rescue it}: the sweep in
+Table~\ref{tab:sweep} covers the KL coefficient. The
+single setting that lifts GRPO above the best baseline does so only on dev, and
+reverses on the frozen test.
+
+The more economical reading is that a stronger backbone helps plain imitation
+at least as much as it helps RL. At 7B, continued SFT on $m$ demonstrations is
+already close to what the model can do on this task; the room RL has to add
+value has narrowed, while its cost has not.
+
+\subsection{``You left out the obvious inference-time baseline''}
+\label{subsec:bon}
+
+A fifth objection, which we did not anticipate and which reviewers of the
+conference version raised independently, is that the control group omits the
+cheapest non-learning option of all: sample $n$ completions from the warm start
+and keep the one the verifier accepts. If verifier-filtered best-of-$n$ were
+strong, it would be a far more natural control arm than a hand-written solver.
+
+It is not available on these tasks, for a structural reason. Our verifier
+decides correctness by executing the emitted program and comparing its output
+to the \emph{gold} answer within a 1\% relative tolerance. At training time
+that is legitimate---the gold answer is part of the training item. At inference
+time it is not: selecting among $n$ candidates with this verifier requires
+knowing the answer. Verifier-filtered best-of-$n$ on these tasks is therefore
+identical to pass@$n$, an oracle upper bound rather than a deployable arm. The
+deployable relative is majority voting over the $n$ samples, which needs no gold.
+
+We measured both from the warm start at $n{=}16$ on dev:
+
+\begin{center}
+\begin{tabular}{llrrrr}
+\toprule
+config & $m$ & pass@1 & pass@16 (oracle) & maj@16 (deployable) & solver \\
+\midrule
+Config~1 & 2   & 9.83  & 48.83 & 35.33 & 72.00 \\
+Config~1 & 64  & 13.17 & 61.17 & 45.17 & 72.00 \\
+Config~2 & 128 & 5.50  & 34.50 & 17.17 & 35.33 \\
+Config~2 & 256 & 16.00 & 51.67 & 30.67 & 35.33 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At all four operating points the deployable arm (maj@16) is below the solver,
+by $15$ to $37$ points. At three of the four, so is the \emph{oracle} upper
+bound: even an omniscient selector over 16 samples from the warm start would
+not reach the solver at Config~1 $m{=}2$, Config~1 $m{=}64$, or Config~2
+$m{=}128$. Only Config~2 $m{=}256$ has oracle headroom above the solver, and
+there the deployable version still falls $4.7$ points short.
+
+Two caveats. These are dev numbers on the 200-item selection subset, not frozen
+test; and this arm was not part of the pre-registered control group, so it
+enters as supporting evidence rather than into $\Delta$. Appendix~\ref{app:pot}
+gives the full budget sweep, in which the sampling arms do overtake the solver
+past $m{=}256$---the same crossing the dose curves show for every learning arm.
+
+\subsection{How the solver was built, and what it cost}
+\label{subsec:solvercost}
+
+Because the solver attains $\max\mathcal{B}$ in 11 of 17 groups, its
+construction is the single largest discretionary choice in this study, and a
+reader is entitled to the procedure rather than an assurance. The pre-registered
+protocol constrained the solver in one direction only---it forbade weakening it
+if GRPO won---which does nothing to prevent the opposite failure. What actually
+constrains it is where it was allowed to look.
+
+The solver was developed against a dev split carved from training data (for
+Config~2, the self-consistent subset of \texttt{train} at \texttt{idx \% 4 == 0},
+$n{=}1013$), with leave-one-out retrieval, under a fast in-process replica of
+the verifier's semantics. The frozen test set was evaluated \emph{once}, at the
+end, with the real verifier. Development proceeded over numbered rounds whose
+dev accuracy we logged as it moved---$0.243 \rightarrow 0.294 \rightarrow 0.317
+\rightarrow \ldots$ for Config~2---together with the failure mode each round
+targeted. Those logs are published verbatim
+(Appendix~\ref{app:reproduce}); they are the audit trail for this arm, and they
+are not flattering in places.
+
+The cost of that dev fitting is visible and we should name it. The solver scores
+$72.00\%$ on Config~1 dev and $64.54\%$ on Config~1 frozen test: a drop of
+$7.46$ points, larger than 15 of the 17 effect sizes this paper reports. That
+gap is the solver's own generalization penalty from having been iterated
+against dev, and it is already fully paid inside every number in
+Table~\ref{tab:main}, because $\Delta$ is computed on test. A reader who
+suspects the solver of being dev-overfitted is right, and the frozen-test
+protocol has already charged it for that.
+
+The engineering cost was roughly 440 lines of task-specific adaptation code on
+top of a reusable symbolic execution core, developed over the logged rounds,
+after which inference runs in seconds on CPU. We do not claim this is cheap in
+human terms, and ``simpler'' in this paper's title refers to the method's
+inference-time and data requirements, not to the labour of writing it. Whether
+a practitioner should build such an arm is a different question from whether a
+paper claiming an RLVR gain should have to clear it.
+
+\paragraph{Does the solver transfer?}
+The sharpest form of the objection is that 440 dataset-specific lines are not
+``simpler'' in any useful sense, because they buy nothing outside the dataset
+they were written for. This is testable within our own study: we have two
+tasks and two independently developed solvers, so each can be run, unmodified,
+on the other's frozen test set under the same clean-subset protocol.
+
+\input{tab/tab_transfer}
+
+Table~\ref{tab:transfer} shows that the answer depends on direction, and that
+the objection is half right. The CodeTAT-QA solver does not transfer at all: it
+parses a JSON table out of the context and emits cell-indexed programs, and on
+CodeFinQA's narrative contexts it finds no table and abstains on all 664 items.
+That is an architectural incompatibility rather than a graceful degradation.
+
+The CodeFinQA solver transfers. Run unmodified on CodeTAT-QA it scores
+$36.17\%$, slightly \emph{above} its $33.43\%$ on its home task. The comparison
+that matters is with Table~\ref{tab:main}: at Config~1's $m{=}2$ operating
+point the three learning arms score $14.54$--$26.60\%$ ($W_m$),
+$18.09$--$24.47\%$ (c-SFT) and $27.66$--$30.50\%$ (RS-SFT). A solver written
+for a different dataset, carried across without a line changed, beats all three.
+It does not approach the native solver's $64.54\%$, and it would not have
+attained $\max\mathcal{B}$ in any reported group---but it establishes that the
+control-group requirement does not depend on bespoke engineering for the exact
+benchmark under test. Half of a symbolic baseline is portable; the table parser
+is not.

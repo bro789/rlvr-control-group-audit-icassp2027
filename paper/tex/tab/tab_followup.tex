@@ -1,0 +1,19 @@
+% 由 analysis/gen_followup_table.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Follow-up runs on the Config~3 cell with the smallest registered margin ($m{=}64$, seed~1), where $\max\mathcal{B}$ is continued SFT at $80.50\%$. All three are exploratory and do not enter the pre-registered decision quantity. Coverage is prompt groups divided by the 2382-item pool.}
+\label{tab:followup}
+\begin{tabular}{lrrrrrrr}
+\toprule
+run & steps & wall (s) & coverage & zero-var & informative & test acc & $\Delta$ \\
+\midrule
+registered & 39 & 5750 & 0.13 & 73.7\% & 82 & 79.43 & $-1.06$ \\
+\addlinespace
+10$\times$ coverage, seed A & 414 & 57667 & 1.39 & 86.0\% & 462 & 87.23 & $\mathbf{+6.74}$ \\
+10$\times$ coverage, seed B & 415 & 57694 & 1.39 & 86.1\% & 461 & 86.88 & $\mathbf{+6.38}$ \\
+difficulty-filtered, matched budget & 33 & 5753 & 0.11 & 54.5\% & 120 & 81.56 & $\mathbf{+1.06}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

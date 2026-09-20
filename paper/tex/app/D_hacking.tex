@@ -1,0 +1,31 @@
+\section{Verifier-hacking audit}
+\label{app:hacking}
+
+If GRPO were exploiting the reward checker rather than solving the task, its
+accuracy would be an artifact and the comparison meaningless. We audit the
+reward-dump records of the 14 GRPO runs whose dumps were retained, spanning all
+three backbones. H1 flags a constant program that performs no computation; H2
+flags the gold value appearing in the emitted code as a literal; H3 is the
+share of positive samples falling under the single most frequent code skeleton;
+H4 flags no-op arithmetic such as $x \times 1$ or $x + 0$, which would slip past
+the anti-constant guard.
+
+\input{tab/tab_hacking}
+
+\noindent
+Constant-program shortcuts occur \textbf{zero} times in 57{,}517
+positive-reward samples: the verifier's anti-constant guard holds. No-op
+arithmetic appears 27 times, $0.05\%$ of positive samples. Template collapse is
+absent---the most frequent skeleton accounts for at most $2.1\%$ of positive
+samples, with skeleton Gini coefficients between $0.06$ and $0.45$, indicating
+a broadly distributed solution space rather than a single exploited pattern.
+
+H2 fires on $0.19\%$ of positive samples. This is expected rather than
+suspicious on these tasks: gold answers are computed from numbers that appear
+in the context, so a correct program will sometimes contain a literal that
+coincides with the gold value.
+
+The four unretained dumps are Config~3 runs. Their positive-reward rates and
+group statistics are nonetheless available from the run metadata and appear in
+Table~\ref{tab:zeroadv}, so no run is unaccounted for. The audit therefore
+covers 14 of 18 runs by dump inspection and 18 of 18 by recorded aggregate.

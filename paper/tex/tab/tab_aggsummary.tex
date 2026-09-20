@@ -1,0 +1,22 @@
+% 由 analysis/gen_extended_stats.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\caption{Aggregator sensitivity, summary over the 17 groups. Only the pre-registered $\max$ over the full four-arm control group is negative everywhere; every weaker aggregator reports a positive mean effect.}
+\label{tab:aggsummary}
+\begin{tabular}{lrrr}
+\toprule
+control-group aggregator & mean $\Delta$ & range & $\Delta<0$ \\
+\midrule
+$\max$ over $\mathcal{B}$ (pre-registered) & $-4.44$ & $-16.42$ to $-1.06$ & 17/17 \\
+$\max$ over learning arms only & $+5.66$ & $-8.89$ to $+35.11$ & 8/17 \\
+second best of $\mathcal{B}$ & $+6.43$ & $-8.89$ to $+35.11$ & 6/17 \\
+mean of $\mathcal{B}$ & $+7.97$ & $-6.14$ to $+31.83$ & 2/17 \\
+median of $\mathcal{B}$ & $+8.61$ & $-5.80$ to $+40.07$ & 2/17 \\
+solver alone & $+1.13$ & $-16.42$ to $+16.31$ & 11/17 \\
+RS-SFT alone & $+6.50$ & $-8.89$ to $+35.11$ & 6/17 \\
+continued SFT alone & $+9.19$ & $-4.26$ to $+45.04$ & 8/17 \\
+warm start $W_m$ alone & $+15.07$ & $+0.71$ to $+48.58$ & 0/17 \\
+\bottomrule
+\end{tabular}
+\end{table}

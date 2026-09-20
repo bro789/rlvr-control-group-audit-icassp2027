@@ -1,0 +1,28 @@
+\section{Training stability across all 18 GRPO runs}
+\label{app:stability}
+
+\input{tab/tab_stability}
+
+\noindent
+One run marked $^{\dagger}$---Config~2, $m{=}128$, seed~1---consumed its full
+wall-clock and verifier budget without ever receiving a positive reward: the
+policy drifted into a region where it no longer emits an executable program and
+did not recover. Its recorded metadata confirms the mechanism exactly: of 880
+prompt groups, 880 are all-zero and none is all-one
+(Table~\ref{tab:zeroadv}). It is the single group excluded from the main paper,
+on the grounds that this is an infrastructure or training failure rather than a
+property of the algorithm under test. We note in Section~\ref{sec:discussion}
+that the pre-registration did not specify this exclusion rule in advance.
+
+The collapse is confined to the weakest backbone at the scarcest budget. Every
+other run sustains a positive reward rate throughout, and the rate rises
+monotonically with backbone capability: $0.522$--$0.560$ at 0.5B,
+$0.081$--$0.092$ and $0.194$--$0.239$ at 1B, and $0.772$--$0.846$ at 7B. The
+excluded run's $\Delta$ would have been $-19.73$ points, more negative than any
+value we report, so excluding it weakens rather than strengthens the paper's
+conclusion.
+
+Section~\ref{sec:analysis} explains why the monotone rise in positive-reward
+rate must not be read as a monotone rise in training quality: at 7B the high
+rate is produced by all-correct groups, which carry zero advantage.
+Table~\ref{tab:zeroadv} gives the decomposition for every run.

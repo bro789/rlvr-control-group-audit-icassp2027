@@ -1,0 +1,95 @@
+\section{Follow-up: where the 7B result ends}
+\label{app:followup}
+
+Section~\ref{sec:discussion} names three things that would change our mind. The
+first was ``a GRPO run at this scale with an order of magnitude more prompt
+coverage, reaching a plateau in its own reward curve, that beats
+$\max\mathcal{B}$ at any operating point.'' We ran it. It does.
+
+This appendix reports that result and a second run that isolates why. Both are
+exploratory: they use the frozen test set at an operating point the protocol
+already spent, they were specified after the 17 registered groups were complete,
+and they do not enter $\Delta$ or any count in the main text. We report them
+because we said we would, and because the answer bounds the paper's claim in a
+way a reader is entitled to know.
+
+\subsection{Design}
+
+We retested the single cell with the \emph{smallest} registered margin:
+Config~3 at $m{=}64$, seed~1, where $\max\mathcal{B}$ is continued SFT at
+$80.50\%$ and the registered GRPO run scored $79.43\%$ for $\Delta = -1.06$.
+This is the cell most favourable to GRPO and therefore the sharpest test: if
+more compute cannot flip it here, it will not flip the others.
+
+Three runs, all branching from the same warm start $W_{64}$ on the same prompt
+pool, differing only in budget and in which prompts they see:
+
+\begin{itemize}
+\item \textbf{Two runs at ten times the wall clock} (57{,}600\,s against
+5700\,s), with two different training seeds and the demonstration seed held
+fixed, so $W_m$ and the pool are identical to the registered run.
+\item \textbf{One run at the registered budget with a difficulty-filtered
+pool.} Section~\ref{sec:analysis} shows that $73.7\%$ of this cell's prompt
+groups carry zero advantage. We scored the pool once with $W_{64}$ under greedy
+decoding, kept only the $440$ of $2382$ prompts it answered incorrectly, and
+trained on that subset under the \emph{same} 5700\,s cap. This asks whether the
+registered result is an artifact of wasted gradient signal rather than of
+budget.
+\end{itemize}
+
+\input{tab/tab_followup}
+
+\subsection{What happened}
+
+\textbf{At ten times the budget, GRPO wins, decisively and reproducibly.}
+Both seeds reach $87.23\%$ and $86.88\%$ against continued SFT's $80.50\%$:
+$\Delta = +6.74$ and $+6.38$, McNemar $p = 0.0013$ and $0.0029$, bootstrap
+intervals $[+2.84, +10.64]$ and $[+2.48, +10.28]$, and a bootstrap probability
+of clearing the $+3$ Go threshold of $0.97$ and $0.95$. By the paper's own
+pre-registered criterion this is a Go. Coverage rose from $0.13$ epochs to
+$1.39$.
+
+\textbf{At the registered budget, fixing the degeneracy changes nothing
+measurable.} The difficulty filter worked as intended: zero-advantage groups
+fell from $73.7\%$ to $54.5\%$ and informative prompts rose from 82 to 120,
+while the run consumed \emph{less} on every compute axis than the registered one
+(33 steps against 39, 2112 verifier calls against 2496, 5753\,s against
+5750\,s). Accuracy rose to $81.56\%$, nominally $+1.06$ over continued SFT. But
+McNemar gives $p = 0.678$ and the interval is $[-2.13, +4.26]$: this is
+indistinguishable from the registered $-1.06$, and $P(\Delta \geq +3) = 0.12$.
+The sign moved; nothing else did.
+
+\textbf{More compute did not make the RL arm more efficient.} The
+zero-advantage fraction \emph{rose} with training, from $73.7\%$ to $86.0\%$, as
+the policy solved more of the pool outright. Informative prompts grew only
+$5.6\times$ across a $10.6\times$ increase in steps. The win at ten times the
+budget was bought by brute force, not by better use of the signal.
+
+\subsection{What this does to the paper}
+
+It bounds the 7B claim and leaves the rest standing.
+
+\emph{The registered finding is unchanged as registered.} Under the
+pre-registered protocol---equal wall clock for every arm---GRPO does not clear
+$+3$ at 7B, and the compute-matched follow-up confirms that this is not an
+artifact of the degeneracy we diagnosed. Both the original $-1.06$ and the
+filtered $+1.06$ sit inside the same interval.
+
+\emph{The 7B configuration no longer supports a claim about scale.} It was
+included to answer ``your models are too small,'' and it cannot: at $10\times$
+the budget the same cell reverses to a decisive Go. What Config~3 demonstrates
+is a \emph{budget} boundary, not a capability one, and
+Section~\ref{sec:scale} now says so. The quantitative core of this paper is the
+11 groups at 0.5B and 1B, where $\max\mathcal{B}$ is attained by a deterministic
+arm leading by $8.5$ to $36.9$ points rather than by $1$ to $4$, and where GRPO
+had $0.53$ to $0.79$ epochs rather than $0.13$.
+
+\emph{The paper's own thesis absorbs this.} The claim is that a reported RLVR
+effect depends on the comparison it is measured against. We can now put three
+numbers on that dependence, from the same runs and the same test set: changing
+which control arm is nominated moves the reported effect by $19.5$ points
+(Section~\ref{sec:statistics}); changing the compute budget by an order of
+magnitude moves it by $7.8$; and changing the inference engine alone moves it by
+$3.0$ (Appendix~\ref{subsec:enginegate}). A reader who takes only one thing from
+this paper should take that an RLVR number without its comparison, its budget
+and its decoding stack attached is not yet a result.

@@ -1,0 +1,24 @@
+{
+ "m": 16,
+ "seed": 0,
+ "ckpt": "checkpoint-60",
+ "dev_n": 200,
+ "n_samples": 16,
+ "gen_seed": 420160,
+ "pass_at": {
+  "1": 0.13,
+  "4": 0.35,
+  "16": 0.545
+ },
+ "verifier_selected": {
+  "1": 0.13,
+  "4": 0.35,
+  "16": 0.545
+ },
+ "majority_at": {
+  "1": 0.13,
+  "4": 0.29,
+  "16": 0.405
+ },
+ "note": "pass@k \u4e0e sel@k \u5747\u4e3a oracle \u4e0a\u754c\uff08\u9700 gold\uff09\uff1bmaj@k \u4e3a\u65e0 gold \u7684\u53ef\u90e8\u7f72\u57fa\u7ebf"
+}

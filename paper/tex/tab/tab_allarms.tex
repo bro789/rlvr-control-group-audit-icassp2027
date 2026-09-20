@@ -1,0 +1,35 @@
+% 由 analysis/gen_extended_stats.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\caption{Every frozen-test number in the study: all 17 groups, all five arms, no averaging over seeds. Config~2 $m{=}128$ seed~1 is the excluded collapsed run.}
+\label{tab:allarms}
+\begin{tabular}{rrrrrrrlr}
+\toprule
+$m$ & seed & solver & $W_m$ & c-SFT & RS-SFT & GRPO & $\arg\max$ & $\Delta$ \\
+\midrule
+\multicolumn{9}{@{}l}{\textit{Config~1 (CodeTAT-QA $\times$ 0.5B, $n{=}282$)}} \\
+2 & 0 & 64.54 & 15.60 & 24.47 & 27.66 & 62.41 & solver & $-2.13$ \\
+2 & 1 & 64.54 & 14.54 & 18.09 & 28.01 & 63.12 & solver & $-1.42$ \\
+2 & 2 & 64.54 & 26.60 & 20.57 & 30.50 & 60.64 & solver & $-3.90$ \\
+64 & 0 & 64.54 & 29.43 & 43.62 & 51.06 & 58.51 & solver & $-6.03$ \\
+64 & 1 & 64.54 & 27.66 & 45.39 & 56.03 & 60.99 & solver & $-3.55$ \\
+64 & 2 & 64.54 & 32.62 & 45.74 & 51.42 & 61.70 & solver & $-2.84$ \\
+\addlinespace
+\multicolumn{9}{@{}l}{\textit{Config~2 (CodeFinQA $\times$ 1B, $n{=}664$)}} \\
+128 & 0 & 32.38 & 12.05 & 20.18 & 21.84 & 17.02 & solver & $-15.36$ \\
+128 & 2 & 32.53 & 12.65 & 18.83 & 25.00 & 16.11 & solver & $-16.42$ \\
+256 & 0 & 32.38 & 25.60 & 26.36 & 28.92 & 29.97 & solver & $-2.41$ \\
+256 & 1 & 32.83 & 25.75 & 27.11 & 25.90 & 28.16 & solver & $-4.67$ \\
+256 & 2 & 32.08 & 28.16 & 27.41 & 30.27 & 30.57 & solver & $-1.51$ \\
+\addlinespace
+\multicolumn{9}{@{}l}{\textit{Config~3 (CodeTAT-QA $\times$ 7B, $n{=}282$)}} \\
+2 & 0 & 64.54 & 71.28 & 79.79 & 75.18 & 76.60 & c-SFT & $-3.19$ \\
+2 & 1 & 64.54 & 69.86 & 77.66 & 76.95 & 74.82 & c-SFT & $-2.84$ \\
+2 & 2 & 64.54 & 70.57 & 76.95 & 74.82 & 75.18 & c-SFT & $-1.77$ \\
+64 & 0 & 64.54 & 79.08 & 81.91 & 80.50 & 79.79 & c-SFT & $-2.13$ \\
+64 & 1 & 64.54 & 78.72 & 80.50 & 80.14 & 79.43 & c-SFT & $-1.06$ \\
+64 & 2 & 64.54 & 79.43 & 85.11 & 81.21 & 80.85 & c-SFT & $-4.26$ \\
+\bottomrule
+\end{tabular}
+\end{table}

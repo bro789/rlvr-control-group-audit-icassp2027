@@ -1,0 +1,30 @@
+\section{Complete solver ablation}
+\label{app:solver}
+
+Variant \textbf{A} uses only the hand-written rule path, \textbf{B} only
+retrieval, and \textbf{C} is the deployed configuration, which tries the rule
+path first and falls back to retrieval. If the solver's accuracy came from
+copying gold programs out of its retrieval library it would be a memorization
+artifact rather than a baseline, so the quantity of interest is $C-A$: what
+retrieval adds on top of the rules.
+
+\input{tab/tab_ablation}
+
+\noindent
+Variant~B returns $0.00\%$ at every one of Config~1's ten budgets and at every
+Config~2 budget up to and including $m{=}256$: it never produces an accepted
+program. Across all ten Config~1 budgets and three seeds---thirty
+measurements---$A$, $C$ and their difference are constant at $72.00\%$,
+$72.00\%$ and $+0.00$ points.
+
+Config~2 is the only place retrieval ever fires, and it does so only at
+$m{=}1024$ ($1.00\%$) and at the full pool $m{=}3635$ ($2.00\%$). Both lie far
+above the two operating points from which reported groups are drawn
+($m_L{=}128$, $m_H{=}256$); at those two the deployed variant differs from the
+rule-only path by $-0.67$ and $-0.33$ points, which is one to two items on the
+200-item dev subset.
+
+With retrieval never firing at any operating budget, the demonstration budget
+has no channel through which to affect the solver at all. That is the mechanism
+behind the flat dose curve in the main paper: the solver is not merely
+insensitive to $m$ in practice, it is structurally unable to use $m$.

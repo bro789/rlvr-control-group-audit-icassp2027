@@ -1,0 +1,120 @@
+# -*- coding: utf-8 -*-
+"""7B 后续实验（10x 覆盖 / 难度过滤）的统计与 LaTeX 表。
+
+这三个 run 都是**探索性**的，不进预注册的 17 组判定量。它们回答的是
+正文 §9「What would change our mind」里点名的第一条：
+在 7B 上把提示覆盖放大一个数量级后，GRPO 还输不输。
+
+对照基线固定为已注册的 C3 m=64 seed 1 那一格：
+  solver 64.54 / warm 78.72 / c-SFT 80.50 / RS-SFT 80.14 / GRPO 79.43
+  max(B) = c-SFT = 80.50，已注册 Δ = −1.06
+"""
+import os, sys, json, math, random
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+random.seed(20270101)
+
+FU = os.path.join("results_backup", "followup_7b")
+BASE = os.path.join("results_backup", "config3_7b", "test_m64_s1.json")
+ARMS = ["solver", "warm", "csft", "rssft"]
+RUNS = [("t101", "10$\\times$ coverage, seed A", 101),
+        ("t102", "10$\\times$ coverage, seed B", 102),
+        ("t201", "difficulty-filtered, matched budget", 201)]
+
+
+def load(p):
+    return json.load(open(p, encoding="utf-8"))
+
+
+def mcnemar(a, b):
+    x = sum(1 for p, q in zip(a, b) if p == 1 and q == 0)
+    y = sum(1 for p, q in zip(a, b) if p == 0 and q == 1)
+    n = x + y
+    if n == 0:
+        return 1.0, x, y
+    k = min(x, y)
+    return min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n), x, y
+
+
+def boot(per_g, per_c, B=20000):
+    n = len(per_g)
+    v = []
+    for _ in range(B):
+        idx = [random.randrange(n) for _ in range(n)]
+        v.append((sum(per_g[i] for i in idx) - sum(per_c[i] for i in idx)) / n * 100)
+    v.sort()
+    q = lambda f: v[min(len(v) - 1, int(f * len(v)))]
+    return q(.025), q(.975), sum(1 for x in v if x >= 3.0) / B
+
+
+base = load(BASE)
+acc0 = {k: sum(v["per_item"]) / len(v["per_item"]) * 100 for k, v in base["arms"].items()}
+best = max(ARMS, key=lambda a: acc0[a])
+per_c = base["arms"][best]["per_item"]
+n = len(per_c)
+print(f"基线格 C3 m=64 s1 (n={n}): max(B)={best} {acc0[best]:.2f}%, 已注册 GRPO {acc0['grpo']:.2f}%, "
+      f"Δ={acc0['grpo']-acc0[best]:+.2f}\n")
+
+rows = []
+for tag, label, ts in RUNS:
+    p = os.path.join(FU, f"test_grpo_m64_s1_{tag}.json")
+    m = os.path.join(FU, f"meta_{tag}.json")
+    if not (os.path.exists(p) and os.path.exists(m)):
+        print("缺", tag)
+        continue
+    d, md = load(p), load(m)
+    per = d["per_item"]
+    a = sum(per) / len(per) * 100
+    delta = a - acc0[best]
+    pv, b_, c_ = mcnemar(per, per_c)
+    lo, hi, p_go = boot(per, per_c)
+    cov = md["groups"] / 2382
+    rows.append(dict(tag=tag, label=label, acc=a, delta=delta, p=pv, b=b_, c=c_,
+                     lo=lo, hi=hi, p_go=p_go, steps=md["steps"],
+                     wall=md["wall_seconds"], vc=md["verifier_calls"],
+                     groups=md["groups"], zv=md["group_zero_var_frac"],
+                     inf=md["groups"] - md["groups_all_zero"] - md["groups_all_one"],
+                     pos=md["verifier_pos_rate"], cov=cov))
+
+print("run     acc      Δ      95% CI            McNemar p   b/c      P(Δ≥+3)")
+for r in rows:
+    print(f"{r['tag']:6s}{r['acc']:7.2f}{r['delta']:+8.2f}   "
+          f"[{r['lo']:+6.2f},{r['hi']:+6.2f}]   {r['p']:.3g}".ljust(60)
+          + f"{r['b']}/{r['c']}   {r['p_go']:.4f}")
+print()
+print("run     步数  墙钟s   verifier  组数  覆盖轮  零方差  有效  pos_rate")
+print(f"{'已注册':6s}    39   5750     2496   312   0.13   73.7%    82   0.837")
+for r in rows:
+    print(f"{r['tag']:6s} {r['steps']:5d}{r['wall']:8.0f}{r['vc']:9d}{r['groups']:6d}"
+          f"{r['cov']:7.2f}{r['zv']*100:7.1f}%{r['inf']:6d}   {r['pos']:.3f}")
+
+dp = os.path.join(FU, "dynpool_m64_s1.json")
+if os.path.exists(dp):
+    d = load(dp)
+    print(f"\n难度过滤：题池 {d['pool']} -> {d['kept']} ({d['kept']/d['pool']*100:.1f}%)，"
+          f"预扫 {d['wall']:.0f}s")
+
+# ---- LaTeX ----
+L = ["% 由 analysis/gen_followup_table.py 生成，勿手改",
+     "\\begin{table}[t]", "\\centering", "\\small",
+     "\\setlength{\\tabcolsep}{4pt}",
+     "\\caption{Follow-up runs on the Config~3 cell with the smallest registered "
+     "margin ($m{=}64$, seed~1), where $\\max\\mathcal{B}$ is continued SFT at "
+     f"${acc0[best]:.2f}\\%$. All three are exploratory and do not enter the "
+     "pre-registered decision quantity. Coverage is prompt groups divided by the "
+     "2382-item pool.}",
+     "\\label{tab:followup}",
+     "\\begin{tabular}{lrrrrrrr}", "\\toprule",
+     "run & steps & wall (s) & coverage & zero-var & informative & test acc & $\\Delta$ \\\\",
+     "\\midrule",
+     f"registered & 39 & 5750 & 0.13 & 73.7\\% & 82 & {acc0['grpo']:.2f} & "
+     f"${acc0['grpo']-acc0[best]:+.2f}$ \\\\", "\\addlinespace"]
+for r in rows:
+    L.append(f"{r['label']} & {r['steps']} & {r['wall']:.0f} & {r['cov']:.2f} & "
+             f"{r['zv']*100:.1f}\\% & {r['inf']} & {r['acc']:.2f} & "
+             f"$\\mathbf{{{r['delta']:+.2f}}}$ \\\\")
+L += ["\\bottomrule", "\\end{tabular}", "\\end{table}"]
+out = os.path.join("论文tex_arXiv", "tab", "tab_followup.tex")
+os.makedirs(os.path.dirname(out), exist_ok=True)
+open(out, "w", encoding="utf-8").write("\n".join(L) + "\n")
+print("\n写出", out)

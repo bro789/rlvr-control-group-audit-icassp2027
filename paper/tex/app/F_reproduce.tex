@@ -1,0 +1,169 @@
+\section{Pre-registration, deviations and reproduction}
+\label{app:reproduce}
+
+\subsection{What was fixed, and when}
+
+The protocol was not written in one sitting, and describing it as a single
+pre-registration would overstate it. The sequence was:
+
+Note first that the configuration numbers in this paper are not chronological.
+Config~2 ran first; Configs~1 and~3 are the second task.
+
+\begin{enumerate}
+\item A single-seed \emph{smoke test} was frozen on 2026-07-19 and run on
+CodeFinQA. Its decision quantity was GRPO minus matched SFT---one opponent, not
+a $\max$---with a Go bar at five points and a No-Go floor at three. Its own text
+states that single-seed results are smoke evidence and not paper evidence, and
+no number from it appears here.
+\item The protocol this paper reports was written on 2026-07-20 as a new
+question rather than a patch on the first. It introduced the five arms, the
+$\max$ aggregation over $\mathcal{B}$, the $+3$ Go criterion with its companion
+conditions, the operating-band rule for $m_L$ and $m_H$, and the good-faith
+clause forbidding us from weakening the solver if GRPO won. It was written for
+CodeFinQA, which this paper calls \textbf{Config~2}.
+\item Config~2 was executed.
+\item An addendum was frozen on 2026-07-24, \emph{before any CodeTAT-QA
+training or evaluation run}, instantiating CodeTAT-QA as the second task and
+carrying the Gate~0/1/2 criteria, the definition of $\Delta$ and the verdict
+vocabulary over verbatim.
+\item Configs~1 and~3 (CodeTAT-QA at 0.5B and 7B) were executed under it.
+\end{enumerate}
+
+The honest labelling that follows is the reverse of what the numbering
+suggests. \textbf{Config~2 is the exploratory one}: its protocol was written by
+authors who had already seen single-seed results on that same dataset.
+\textbf{Configs~1 and~3 are confirmatory}: the rule governing them was frozen
+before any of their data existed. The abstract's framing---``pre-registered,
+before the second task was run''---refers to step 4 and is accurate, but a
+reader could take it to mean the whole study was registered before any data
+existed, and it was not. Note also that the quantitative core of this paper, the
+11 groups at 0.5B and 1B, straddles the two: six of them are confirmatory and
+five are not.
+
+One further qualification on the word ``frozen.'' The document written in step 2
+carries a status line reading \emph{not yet frozen}, and the addendum of step 4
+refers to the operative protocol as that document \emph{together with} a
+numbered entry in the deviation log. The frozen protocol is therefore a draft
+plus one logged amendment rather than a single signed artifact, and a reader
+reconstructing it must read both. We publish both.
+
+Within the confirmatory scope, only ``GRPO vs.\ the strongest non-RL arm'' is a
+confirmatory comparison; the ablations, audits, sweep, dose curves and every
+analysis in Section~\ref{sec:statistics} of this extended version are
+exploratory and are reported as such.
+
+One rule was adopted after the fact: the exclusion of a run whose positive
+reward rate is identically zero. It was not specified in advance. Its effect is
+reported in both directions in Appendix~\ref{app:stability}.
+
+\subsection{Artifacts}
+
+The following are released with this extended version, at
+\url{\repourl}:
+
+\begin{itemize}
+\item \textbf{The pre-registration documents and their addendum}, verbatim, in
+the state they were frozen.
+\item \textbf{The deviation logs}, listing every procedural departure from the
+protocol and the direction in which it influences $\Delta$. These are not
+curated: they include the incident in which an early verdict script silently
+omitted the solver from the $\max$ set and reported $\Delta = +3.00$ where the
+corrected value is $-14.00$. That error is why the aggregation is computed over
+an explicit arm list and checked, and we regard publishing it as part of the
+claim.
+\item \textbf{The solver development logs}, round by round, with the dev
+accuracy after each round and the failure mode each round targeted
+(Section~\ref{subsec:solvercost}).
+\item \textbf{The solver, the verifier and the training/evaluation harness.}
+\item \textbf{Per-item outcome vectors} for all five arms in all 17 groups: the
+inputs to every number in Section~\ref{sec:statistics} and
+Appendix~\ref{app:allarms}.
+\item \textbf{The inference-engine equivalence gate} of
+Section~\ref{subsec:enginegate}: its script, its raw result and its 18 per-item
+flip samples.
+\item \textbf{The analysis scripts.} Every table in this document that reports
+a statistic is emitted directly from the stored artifacts by
+\texttt{gen\_extended\_\allowbreak stats.py} or
+\texttt{gen\_supp\_\allowbreak tables.py} under \texttt{analysis/}; both carry
+self-checks that abort if a recomputed value disagrees with the value printed
+in the paper.
+\end{itemize}
+
+\subsection{The inference-engine equivalence gate}
+\label{subsec:enginegate}
+
+One entry in the deviation log bears directly on whether a $3$-point Go
+threshold is measurable at all, so we state it here rather than leaving it to a
+reader of the logs.
+
+Early in the study we considered replacing HuggingFace \texttt{generate} with
+vLLM, which is roughly $60\times$ faster on this workload. Before adopting it we
+ran an equivalence gate: the same checkpoint, the same 200 dev items, a prompt
+fingerprint verified identical on both sides, and---by design---generation
+separated from verification, so that the two engines only produced text and a
+single shared verifier scored it. Anything else would have folded environment
+differences into the measurement.
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+HuggingFace \texttt{generate} accuracy & $41.00\%$ \\
+vLLM accuracy & $38.00\%$ \\
+difference & $-3.00$ pp \\
+\midrule
+per-item reward agreement & $91.00\%$ (18/200 flipped) \\
+generated text identical & $38.50\%$ \\
+HF-only correct / vLLM-only correct & 12 / 6 \\
+McNemar $\chi^2$ & $1.39$ (n.s.) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The engine alone moves accuracy by $3.00$ points, which is exactly this study's
+pre-registered Go threshold, and it does so in no systematic direction. A
+constant offset could have been corrected; non-systematic noise of the same
+magnitude as the effect under test cannot. The mechanism is not floating-point
+jitter at the last digit but path divergence: a 0.5B policy reading a
+${\sim}3000$-token prompt in bf16 has very small logit gaps, so a single
+\texttt{argmax} flip early in decoding sends the emitted program down a
+different branch. Only $38.5\%$ of completions are textually identical, which
+shows the divergence is the normal case rather than an occasional accident.
+
+We therefore rejected the substitution and used HuggingFace \texttt{generate}
+throughout. We report this for two reasons. First, it is the reason a reader
+should believe the $3$-point threshold means anything in this study: we checked
+that our own instrument does not move by that much for reasons unrelated to the
+treatment. Second, it generalizes the paper's argument one level down. The
+headline result is that a reported RLVR effect depends on which control arm you
+compare against, to the tune of $19$ points; this gate shows that it also depends
+on which inference engine you decode with, to the tune of $3$---and that an
+author who swapped engines mid-study would see neither dependence in the
+reported numbers.
+
+\subsection{Reproducing the numbers}
+
+With the artifact bundle in place:
+
+\begin{verbatim}
+# results_backup/ -> the fact table
+python analysis/gen_data_facts.py
+# ablation, PoT, audit, stability
+python analysis/gen_supp_tables.py
+# per-group stats, aggregators, cross-fitting,
+# coverage, zero-advantage
+python analysis/gen_extended_stats.py
+\end{verbatim}
+
+Randomized quantities are seeded: the bootstrap uses $B = 10{,}000$ resamples
+and the cross-fitted estimator $K = 2{,}000$ splits, both under a fixed seed, so
+the reported intervals are reproducible to the digit.
+
+\subsection{Hardware and software}
+
+One NVIDIA RTX A6000 (48\,GB) per run; PyTorch 2.10, \texttt{transformers}
+4.57, \texttt{peft} 0.19, \texttt{trl} 1.8. Every arm trains a LoRA adapter
+($r{=}16$, $\alpha{=}32$) at learning rate $10^{-5}$; GRPO uses 8 generations
+per prompt, $\beta{=}0.04$, temperature $1.0$, top-$p$ $0.95$ and effective
+batch 64, reduced to per-device 4 with accumulation 16 at 7B. The three arms
+that keep training are each capped at 5700\,s of wall clock. The solver runs on
+CPU in seconds.

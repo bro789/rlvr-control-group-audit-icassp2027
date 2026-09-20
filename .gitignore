@@ -1,0 +1,13 @@
+*.aux
+*.log
+*.out
+*.toc
+*.blg
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+arxiv_submission.tar.gz

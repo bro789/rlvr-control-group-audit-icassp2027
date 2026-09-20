@@ -1,0 +1,46 @@
+\section{Non-learning alternatives: prompting and sampling}
+\label{app:pot}
+
+\subsection{Program-of-Thought / PAL prompting}
+
+The first alternative non-learning baseline is to prompt the base model
+directly to emit a program, using the same $m$ demonstrations as few-shot
+examples and taking no gradient steps.
+
+\input{tab/tab_pot}
+
+\noindent
+Frozen-test accuracy is $9.93$--$16.67\%$ (mean $13.30\%$) in Config~1 and
+$0.75$--$1.36\%$ (mean $1.00\%$) in Config~2. This is the weakest arm in the
+entire study, far below both the solver and GRPO, which is what establishes
+that the solver's strength is specific symbolic competence rather than a free
+advantage of skipping training.
+
+Two features of the table need explaining. First, the Config~2 rows at
+$m{=}128$ and $m{=}256$ are identical. This is not a transcription error: the
+prompt carries at most four few-shot examples, and because the demonstration
+subsets are nested prefixes, both budgets supply the same four. Second, the
+Config~1 $m{=}64$ seed-0 dev evaluation ran on a 20-item subset rather than the
+200-item convention used everywhere else; its frozen-test evaluation used the
+full 282 items, as did all others.
+
+\subsection{Best-of-$n$ and majority voting}
+
+The second alternative is inference-time sampling from the warm start, discussed
+in Section~\ref{subsec:bon}. Because our verifier requires the gold answer,
+verifier-filtered best-of-$n$ coincides with pass@$n$ and is an oracle bound
+rather than a deployable arm; majority voting is the deployable relative.
+
+\input{tab/tab_bon}
+
+\noindent
+At the four pre-registered operating budgets the deployable arm is below the
+solver everywhere, and the oracle bound is below the solver at three of the
+four. Both sampling arms overtake the solver from $m{=}256$ (Config~1) and
+$m{=}256$ (Config~2 oracle) onward, which is the same crossing the dose curves
+show for every learning arm: sampling more from a better-fit warm start is a
+learning arm in disguise, and it scales with the demonstration budget for the
+same reason the others do.
+
+These are dev measurements on the 200-item selection subset and were not part of
+the pre-registered control group $\mathcal{B}$; they do not enter $\Delta$.

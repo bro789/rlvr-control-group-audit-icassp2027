@@ -1,0 +1,22 @@
+% 由 analysis/gen_extended_stats.py 生成，勿手改
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\caption{Compute on four axes, ranges over the three seeds. Wall clock is the pre-registered matching axis; the other three are reported so that the matching is not taken on trust. RS-SFT, not GRPO, is the most expensive arm on generated tokens and verifier calls.}
+\label{tab:compute}
+\begin{tabular}{llrrrrrrr}
+\toprule
+& & \multicolumn{3}{c}{wall clock (s)} & \multicolumn{2}{c}{verifier calls} & \multicolumn{2}{c}{generated tokens} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+cfg & $m$ & c-SFT & GRPO & RS-SFT & GRPO & RS-SFT & GRPO & RS-SFT \\
+\midrule
+C1 & 2 & 2579--3196 & 5701--5703 & 5715--5732 & 15488--17920 & 21824--24576 & 722k--798k & 5441k--6136k \\
+C1 & 64 & 5703--5707 & 5711--5728 & 4561--5815 & 12160--13184 & 13184--15872 & 908k--947k & 2906k--3301k \\
+C2 & 128 & 5704--5715 & 5709--5751 & 1549--5905 & 6272--7040 & 7040--9728 & 296k--323k & 1103k--1298k \\
+C2 & 256 & 5703--5714 & 5720--5755 & 5822--6038 & 7104--7872 & 6144--6656 & 299k--335k & 602k--762k \\
+C3 & 2 & 5702--5706 & 5712--5761 & --- & 2304--2880 & --- & 131k--150k & --- \\
+C3 & 64 & 5721--5748 & 5750--5864 & --- & 2240--2496 & --- & 167k--181k & --- \\
+\bottomrule
+\end{tabular}
+\end{table}

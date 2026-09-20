@@ -1,0 +1,141 @@
+# -*- coding: utf-8 -*-
+"""solver 可迁移性：两条部署版 solver 交叉跑到对方的数据集上。
+
+回应的批评（R4 W4 / R1 W3 / R3 W1）：
+「440 行是为这两个数据集定制的、不可迁移，所以 *something simpler* 站不住」。
+
+为什么用交叉测而不是第三个数据集：
+  BizBench 其余几个都不合适——ConvFinQA 的 question 是对话片段（"and in 2007?"），
+  历史轮次埋在 context 末尾，任何单轮系统都会崩，测出的是多轮指代能力而非迁移能力
+  （实测 1.27%，已弃用）；TAT-QA / SEC-NUM / FormulaEval / FinKnow 没有 gold program。
+  本文自己的两个数据集才是干净对照：都单轮、都有 gold program、都在研究里，
+  但结构截然不同（JSON 表格+单元格索引 vs 叙述文本+内联数字）。
+
+评测口径逐行照抄 final_test_eval.py：
+  - clean 过滤：verify(gold_program, answer, True, _ctx(r)) == 1.0
+  - _ctx：**只有 context_type == "json" 时才注入 context**，否则 None
+  - 预测：S.build_program(question, context, store)，取返回元组的第 0 位
+  - 检索库用空库（纯规则）。正文消融已确立：全部工作点上 规则 == 部署配置，
+    检索边际贡献 +0.00，所以空库不改变主场数字，且让迁移测的是规则机器本身。
+
+脚本先复现两个主场数字，对不上就中止——架子不可信时不产出迁移结论。
+"""
+import os, sys, json
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SM = os.path.join(ROOT, "ca_rlvr_smoke")
+sys.path.insert(0, SM)
+os.chdir(SM)
+
+from verifier import verify  # noqa: E402
+
+DATA = os.path.join(SM, "data")
+TAT = os.path.join(DATA, "CodeTAT-QA__test.jsonl")
+FIN = os.path.join(DATA, "CodeFinQA__test.jsonl")
+# 正文数字（DATA_FACTS.md）：solver 在冻结 test 上的成绩
+EXPECT = {"CodeTAT-QA": 64.54, "CodeFinQA": 32.4}   # 配置② 三种子 32.08-32.83
+TOL = 1.5
+
+
+def ctx_of(r):
+    """逐行照抄 final_test_eval._ctx。"""
+    return (str(r.get("context"))
+            if (r.get("context") is not None
+                and str(r.get("context_type", "")).lower() == "json")
+            else None)
+
+
+def clean_rows(path):
+    rows = [json.loads(l) for l in open(path, encoding="utf-8")]
+    keep = [r for r in rows
+            if r.get("program")
+            and verify(r["program"], r["answer"], True, ctx_of(r))["reward"] == 1.0]
+    return keep, len(rows)
+
+
+def evaluate(build, rows, label, store):
+    hits = abst = err = 0
+    for r in rows:
+        prog = None
+        try:
+            out = build(r["question"], r["context"], store)
+            prog = out[0] if isinstance(out, (tuple, list)) else out
+        except Exception:
+            err += 1
+            prog = None
+        if not (isinstance(prog, str) and prog.strip()):
+            abst += 1
+            continue
+        try:
+            hits += int(verify(prog, r["answer"], True, ctx_of(r))["reward"] == 1.0)
+        except Exception:
+            err += 1
+    acc = hits / max(len(rows), 1) * 100
+    print(f"  {label:46s} {hits:4d}/{len(rows):4d} = {acc:6.2f}%   弃答 {abst}  异常 {err}")
+    return acc
+
+
+if __name__ == "__main__":
+    tat, tat_n = clean_rows(TAT)
+    fin, fin_n = clean_rows(FIN)
+    print(f"clean 子集：CodeTAT-QA {len(tat)}/{tat_n}   CodeFinQA {len(fin)}/{fin_n}")
+
+    import solver_tatqa as S_TAT          # 配置①③ 部署臂
+    import solver_v2_combo as S_FIN       # 配置②  部署臂
+
+    # combo 的 build_program 需要真的 Store 对象；按 final_eval 的方式构建。
+    tr = [json.loads(l) for l in open(S_FIN.TRAIN_PATH, encoding="utf-8")]
+    store_fin = S_FIN.Store(tr, S_FIN.load_sc_flags(tr))
+    store_tat = {}                        # tatqa 的 build_program 容忍空库
+
+    print("\n=== 主场（用于校验架子）===")
+    home_tat = evaluate(S_TAT.build_program, tat, "CodeTAT-QA solver -> CodeTAT-QA", store_tat)
+    home_fin = evaluate(S_FIN.build_program, fin, "CodeFinQA  solver -> CodeFinQA", store_fin)
+
+    bad = []
+    for name, got in [("CodeTAT-QA", home_tat), ("CodeFinQA", home_fin)]:
+        if abs(got - EXPECT[name]) > TOL:
+            bad.append(f"{name}: 实测 {got:.2f}% vs 正文 {EXPECT[name]}%")
+    if bad:
+        print("\n!! 主场数字对不上正文，架子不可信，中止：")
+        for b in bad:
+            print("   ", b)
+        sys.exit(1)
+    print("  ✓ 两个主场数字都落在正文 ±%.1f 点内，架子可信" % TOL)
+
+    print("\n=== 迁移 ===")
+    x_tat = evaluate(S_TAT.build_program, fin, "CodeTAT-QA solver -> CodeFinQA  (迁移)", store_tat)
+    x_fin = evaluate(S_FIN.build_program, tat, "CodeFinQA  solver -> CodeTAT-QA (迁移)", store_fin)
+
+    print("\n" + "=" * 70)
+    for nm, h, x in [("CodeTAT-QA solver", home_tat, x_tat),
+                     ("CodeFinQA  solver", home_fin, x_fin)]:
+        print(f"{nm}: 主场 {h:6.2f}%  ->  迁移 {x:6.2f}%   保留 "
+              + (f"{x/h*100:.0f}%" if h else "n/a"))
+
+    out = dict(home_tat=home_tat, home_fin=home_fin, x_tat=x_tat, x_fin=x_fin,
+               n_tat=len(tat), n_fin=len(fin))
+    res = os.path.join(ROOT, "paper", "SOLVER_TRANSFER.json")
+    json.dump(out, open(res, "w", encoding="utf-8"), indent=1)
+    print("\n写出", res)
+
+    L = ["% 由 analysis/solver_transfer_cross.py 生成，勿手改",
+         "\\begin{table}[t]", "\\centering", "\\small",
+         "\\caption{Solver transferability. Each solver is run unmodified on the other "
+         "task's frozen test set, under the same clean-subset protocol. The narrative "
+         "solver transfers and still beats all three learning arms of Config~1 at "
+         "$m{=}2$; the table solver does not transfer at all, because it cannot parse a "
+         "context that is not a JSON table and abstains on every item.}",
+         "\\label{tab:transfer}",
+         "\\begin{tabular}{lrrr}", "\\toprule",
+         "solver & home task & other task & retained \\\\", "\\midrule",
+         f"built on CodeTAT-QA & {home_tat:.2f} & {x_tat:.2f} & "
+         f"{x_tat/home_tat*100:.0f}\\% \\\\",
+         f"built on CodeFinQA & {home_fin:.2f} & {x_fin:.2f} & "
+         f"{x_fin/home_fin*100:.0f}\\% \\\\",
+         "\\bottomrule", "\\end{tabular}", "\\end{table}"]
+    tex = os.path.join(ROOT, "论文tex_arXiv", "tab", "tab_transfer.tex")
+    os.makedirs(os.path.dirname(tex), exist_ok=True)
+    open(tex, "w", encoding="utf-8").write("\n".join(L) + "\n")
+    print("写出", tex)

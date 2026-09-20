@@ -1,0 +1,94 @@
+\section{Introduction}
+
+Reinforcement learning with verifiable rewards (RLVR) has become the default
+recipe for improving symbolic reasoning: sample programs, execute them, reward
+the correct ones, optimize with a policy-gradient method such as
+GRPO~\cite{grpo2024}. Reported gains are large and consistent~\cite{deepseekr1}.
+
+What those gains are measured against is remarkably uniform. Across the
+empirical RLVR literature the control group consists of \emph{learning} arms:
+the un-tuned base model, a matched supervised fine-tuning (SFT) run on the same
+demonstrations, and---in the more careful papers---rejection-sampling
+SFT~\cite{rft2023,restem2023}. Every one of these consumes the demonstration
+budget and improves as it grows. A fourth option is almost never present: a
+deterministic, non-learning symbolic solver. For program-annotated numerical
+reasoning benchmarks such as FinQA~\cite{finqa2021} or
+TAT-QA~\cite{tatqa2021}, where answers are short arithmetic programs over a
+table, such a solver is not exotic---it is the classical approach the neural
+pipeline replaced.
+
+This paper asks whether that omission changes conclusions, and finds something
+more general than expected.
+
+\paragraph{The observation that starts it.}
+With two demonstrations on CodeTAT-QA, warm-start SFT reaches $19.0\%$ dev
+accuracy and GRPO reaches $72.0\%$---a 53-point gain that, against a
+warm-start-only control, is an unambiguous success. A rule-based solver handed
+the \emph{same} two demonstrations---and using neither---also reaches $72.0\%$.
+On the frozen test
+set the three seeds give $\Delta = -2.13$, $-1.42$, $-3.90$ points. The gain
+over the learning baseline is real; the conclusion drawn from it is not.
+
+\paragraph{Design.}
+We pre-registered---before running anything on the second task---a single
+decision quantity:
+\begin{equation}
+\label{eq:delta}
+\Delta(m) = \mathrm{Acc}(\mathrm{GRPO}|W_m) - \max_{a \in \mathcal{B}} \mathrm{Acc}(a),
+\end{equation}
+with $\mathcal{B} = \{W_m, \text{c-SFT}, \text{RS-SFT}, \text{solver}\}$, all
+arms branching from the same warm start $W_m$ trained on the same $m$
+demonstrations. Taking a $\max$ over the control group, rather than comparing
+against one chosen opponent, is the central design decision: it makes the
+comparison impossible to ease by dropping an arm.
+
+\paragraph{Findings.}
+We evaluate two tasks and three backbones spanning $14\times$ in scale. All 17
+frozen-test groups give negative $\Delta$, from $-1.06$ to $-16.42$ points
+(Figure~\ref{fig:delta}). But the interesting structure is in \emph{which} arm
+wins:
+
+\begin{itemize}\itemsep2pt
+\item At \textbf{0.5B and 1B}, the maximum is attained by the deterministic
+solver in every one of 11 groups. Dose-response curves explain why: the solver
+is flat in the demonstration budget while every learning arm scales steeply
+with it, so the scarce regime is where a non-learning baseline is strongest.
+\item At \textbf{7B}, the solver drops 15 points behind and is no longer
+competitive---exactly as the ``RLVR gains emerge with backbone capability''
+account predicts. $\Delta$ stays negative in all six groups anyway, because the
+winning arm becomes \textbf{continued SFT}: the most elementary baseline in the
+set, and one that appears in essentially every RLVR paper.
+\end{itemize}
+
+So the finding is not ``a symbolic solver beats RL''---that is a fact about one
+scale regime. It is that \emph{at every scale we measured, some simpler method
+matched or beat GRPO, but which method that is changes with scale}. A control
+group holding only the base model and one matched SFT run misses the solver at
+0.5B; a control group designed around the solver misses continued SFT at 7B.
+What the evidence demands is breadth of the control group and a $\max$
+aggregation over it, not the presence of any particular arm.
+
+\paragraph{Contributions.}
+(i) A control-group design for RLVR evaluation---a non-learning arm plus $\max$
+aggregation---together with the pre-registered decision rule built on it;
+(ii) an execution over two tasks and three backbones in which all 17
+frozen-test effect sizes are negative and the identity of the winning baseline
+shifts with scale; (iii) three independent observations of dev-selection bias,
+each a non-negative $\Delta$ on dev that turns negative on the frozen test.
+
+Section~\ref{sec:statistics} additionally audits the decision rule against the
+selection bias it could itself introduce, and finds that it does not account for
+the result. We report that as an audit of our own instrument rather than as a
+contribution, alongside the per-group statistics---two of seventeen groups
+significant under Holm---that the effect sizes actually support.
+
+\paragraph{What we do not claim.}
+We do not claim RLVR is ineffective: our GRPO runs beat every learning baseline
+at 0.5B, by 35 points at $m{=}2$. We do not claim the solver generalizes---it is
+task-specific and its engineering cost is reported in
+Section~\ref{subsec:solvercost}. We do not claim the 7B groups establish a
+scale effect: at ten times the prompt coverage the smallest-margin 7B cell
+reverses to $\Delta = +6.74$ (Appendix~\ref{app:followup}), so Config~3 marks a
+budget boundary rather than a capability one. We claim only that an RLVR
+conclusion established without a broad control group, a stated budget and a
+frozen test set is not trustworthy.

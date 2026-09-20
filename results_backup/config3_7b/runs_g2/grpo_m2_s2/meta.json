@@ -1,0 +1,18 @@
+{
+ "branch": "grpo",
+ "m": 2,
+ "seed": 2,
+ "demo_seed": 2,
+ "train_seed": 2,
+ "wall_seconds": 5761.229002952576,
+ "budget_seconds": 5700,
+ "steps": 45,
+ "verifier_calls": 2880,
+ "verifier_pos_rate": 0.8232638888888889,
+ "gen_tokens": 142044,
+ "opt_tokens": 2128560,
+ "groups": 360,
+ "groups_all_zero": 43,
+ "groups_all_one": 267,
+ "group_zero_var_frac": 0.8611111111111112
+}
